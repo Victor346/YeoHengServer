@@ -1,0 +1,18 @@
+[package]
+name = "yeoheng-server"
+version = "0.1.0"
+authors = ["Victor Lopez <A01336434@itesm.mx", "Injoong Kim", "Fernando Rios"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "2.0"
+actix-rt = "1.0"
+mongodb = "1.1.0"
+bson = "1.1.0"
+serde = "1.0.115"
+serde_json = "1.0.57"
+envfile = "0.2.1"
+rust-argon2 = "0.8.2"
+listenfd = "0.3.3"
