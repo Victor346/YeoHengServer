@@ -9,7 +9,7 @@ async fn index2() -> impl Responder {
     HttpResponse::Ok().body("Hello world 3")
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let mut listenfd = ListenFd::from_env();
     let  mut server = HttpServer::new(|| {
