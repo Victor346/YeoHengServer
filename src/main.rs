@@ -61,14 +61,18 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .route("/", web::get().to(index))
             .route("/again", web::get().to(index2))
-            .route("/signup", web::get().to(register))
+            .route("/signup", web::post().to(register))
     });
 
-    server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
-        server.listen(l)?
-    } else {
-        server.bind("127.0.0.1:3000")?
-    };
+    let address = format!("127.0.0.1:{}",match std::env::var("PORT") {
+        Ok(p) => p,
+        Err(e) => "3000".to_string(),
+    });
+
+    println!("{}", address);
+
+    let server = server.bind(address)?;
+
 
     server.run().await
 }
