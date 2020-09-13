@@ -1,3 +1,10 @@
+mod models;
+mod auth;
+
+extern crate argon2;
+
+use crate::models::user::User;
+use crate::auth::authentication;
 use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
 use listenfd::ListenFd;
@@ -11,14 +18,25 @@ async fn index2() -> impl Responder {
     HttpResponse::Ok().body("Hello world 3")
 }
 
-async fn dbtest(client: web::Data<MongoClient>) -> impl Responder {
-    let db = client.database("yeohengDev");
+async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>) -> impl Responder {
+    let user = user_json.into_inner();
 
-    for collection_name in db.list_collection_names(None).await.expect("Error found while listing collections") {
-        println!("{}", collection_name);
+    println!("{:?}", user);
+
+    match User::validate(user, &client).await {
+        Ok(mut validated_user) => {
+            println!("{:?}", validated_user);
+            let salted_pass = authentication::salt_password(validated_user.password.clone());
+            validated_user.password = salted_pass;
+            User::insert(validated_user, &client).await;
+
+            HttpResponse::Ok().body("Todo chido")
+        },
+        Err(e) => {
+            println!("{}", e.clone());
+            HttpResponse::BadRequest().body(e)
+        },
     }
-
-    HttpResponse::Ok().body("Hello db")
 }
 
 type MongoClient = mongodb::Client;
@@ -43,7 +61,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .route("/", web::get().to(index))
             .route("/again", web::get().to(index2))
-            .route("/testdb", web::get().to(dbtest))
+            .route("/signup", web::get().to(register))
     });
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {

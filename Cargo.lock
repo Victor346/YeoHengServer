@@ -2752,6 +2752,7 @@ dependencies = [
  "env_logger",
  "listenfd",
  "mongodb",
+ "regex",
  "rust-argon2",
  "serde",
  "serde_json",
