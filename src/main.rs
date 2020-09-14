@@ -1,54 +1,14 @@
 mod models;
 mod auth;
+mod controllers;
 
 extern crate argon2;
 
-use crate::models::user::User;
-use crate::auth::authentication;
+use crate::controllers::user_controller;
 use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
 use serde::{Serialize, Deserialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-struct UserResponse{
-    jwt: String,
-    username: String,
-}
-
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
-
-async fn index2() -> impl Responder {
-    HttpResponse::Ok().body("Hello world 3")
-}
-
-async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>) -> impl Responder {
-    let user = user_json.into_inner();
-
-    match User::validate(user, &client).await {
-        Ok(mut validated_user) => {
-            println!("{:?}", validated_user);
-            let salted_pass = authentication::salt_password(validated_user.password.clone());
-            let username = validated_user.username.clone();
-            validated_user.password = salted_pass;
-            let user_id = User::insert(validated_user, &client).await;
-            let jwt = authentication::generate_jwt(user_id);
-            
-            let response = UserResponse{
-                jwt: jwt,
-                username: username
-            };
-
-            HttpResponse::Created().json(response)
-        },
-        Err(e) => {
-            println!("{}", e.clone());
-            HttpResponse::BadRequest().body(e)
-        },
-    }
-}
 
 type MongoClient = mongodb::Client;
 
@@ -69,9 +29,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(mongo_client.clone())
             .wrap(middleware::Logger::default())
-            .route("/", web::get().to(index))
-            .route("/again", web::get().to(index2))
-            .route("/signup", web::post().to(register))
+            .route("/", web::get().to(user_controller::index))
+            .route("/login", web::post().to(user_controller::login))
+            .route("/signup", web::post().to(user_controller::register))
     });
 
     let address = format!("0.0.0.0:{}",match std::env::var("PORT") {
