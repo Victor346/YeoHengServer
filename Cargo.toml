@@ -16,6 +16,7 @@ rust-argon2 = "0.8.2"
 listenfd = "0.3.3"
 env_logger = "0.7"
 regex = "1"
+jsonwebtoken = "7.2.0"
 
 [dependencies.mongodb]
 version = "1.1.0"

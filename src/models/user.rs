@@ -8,7 +8,7 @@ use mongodb::bson::Document;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
-    id: Option<ObjectId>,
+    pub _id: Option<ObjectId>,
     name: String,
     username: String,
     pub password: String,
