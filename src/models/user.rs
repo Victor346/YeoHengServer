@@ -10,7 +10,7 @@ use mongodb::bson::Document;
 pub struct User {
     pub _id: Option<ObjectId>,
     name: String,
-    username: String,
+    pub username: String,
     pub password: String,
     role: Option<String>,
     email: String,
@@ -38,13 +38,17 @@ impl User {
         }
     }
 
-    pub async fn insert(user: User, client: &MongoClient) {
+    pub async fn insert(user: User, client: &MongoClient) -> ObjectId {
         let db = client.database("yeohengDev");
         let user_collection = db.collection("users");
-        user_collection
+        (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())
             .await
-            .expect("Error in find user");
+            .expect("Error in find user")
+            .inserted_id
+            .as_object_id()
+            .unwrap())
+            .clone()
     }
 
     pub async fn to_doc(&self) -> Document {

@@ -5,12 +5,13 @@ use serde::{Serialize, Deserialize};
 use argon2::{self, Config};
 use jsonwebtoken::{encode, decode, Header, Algorithm, Validation,
     EncodingKey, DecodingKey};
+use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct MyClaims {
     iss: String,
     sub: String,
-    exp: usize,
+    exp: i64,
 }
 
 pub fn salt_password(password: String) -> String {
@@ -23,11 +24,16 @@ pub fn salt_password(password: String) -> String {
     argon2::hash_encoded(pass, salt, &config).unwrap()
 }
 
-pub fn generate_jwt(user: User) -> String{
+pub fn generate_jwt(user_id: ObjectId) -> String{
+    let milisecond_in_day = 24 * 60 * 60 * 1000; 
+
     let claims = MyClaims {
         iss: "yeoheng-server.com".to_string(),
-        sub: user._id.unwrap().to_hex(),
-        exp: 4552,
+        sub: user_id.to_hex(),
+        exp: Utc::now().timestamp() + milisecond_in_day,
     };
-    "agfsf".to_string()
+
+    let header = Header::new(Algorithm::HS512);
+    let jwt_secret = std::env::var("JWT_SECRET").expect("Error retrieving jwt secret");
+    encode(&header, &claims, &EncodingKey::from_secret(jwt_secret.as_ref())).unwrap()
 }

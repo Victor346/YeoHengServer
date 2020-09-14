@@ -8,6 +8,13 @@ use crate::auth::authentication;
 use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UserResponse{
+    jwt: String,
+    username: String,
+}
 
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
@@ -24,10 +31,17 @@ async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>) ->
         Ok(mut validated_user) => {
             println!("{:?}", validated_user);
             let salted_pass = authentication::salt_password(validated_user.password.clone());
+            let username = validated_user.username.clone();
             validated_user.password = salted_pass;
-            User::insert(validated_user, &client).await;
+            let user_id = User::insert(validated_user, &client).await;
+            let jwt = authentication::generate_jwt(user_id);
+            
+            let response = UserResponse{
+                jwt: jwt,
+                username: username
+            };
 
-            HttpResponse::Ok().body("Todo chido")
+            HttpResponse::Created().json(response)
         },
         Err(e) => {
             println!("{}", e.clone());
