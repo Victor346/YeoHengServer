@@ -8,17 +8,25 @@ use mongodb::bson::Document;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
-    id: Option<ObjectId>,
+    pub _id: Option<ObjectId>,
     name: String,
-    username: String,
+    pub username: String,
     pub password: String,
     role: Option<String>,
     email: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserLogin {
+    email: String,
+    password: String,
+}
+
 impl User {
     pub async fn validate(user_to_valdiate: User, client: &MongoClient) -> Result<User, String> {
-        let db = client.database("yeohengDev");
+        let db = client.database(std::env::var("DATABASE_NAME")
+                                    .expect("Error retrieving database name")
+                                        .as_str());
         let user_collection = db.collection("users");
         let mail = user_to_valdiate.email.clone();
         let username = user_to_valdiate.username.clone();
@@ -32,19 +40,22 @@ impl User {
         match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
             Some(_) => Err("User is already registered".to_string()),
             None => {
-
                 Ok(user_to_valdiate)
             }
         }
     }
 
-    pub async fn insert(user: User, client: &MongoClient) {
+    pub async fn insert(user: User, client: &MongoClient) -> ObjectId {
         let db = client.database("yeohengDev");
         let user_collection = db.collection("users");
-        user_collection
+        (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())
             .await
-            .expect("Error in find user");
+            .expect("Error in find user")
+            .inserted_id
+            .as_object_id()
+            .unwrap())
+            .clone()
     }
 
     pub async fn to_doc(&self) -> Document {
@@ -54,6 +65,24 @@ impl User {
             "password": self.password.clone(),
             "role": "user",
             "email": self.email.clone()
+        }
+    }
+
+    pub async fn findUser(user_to_find: UserLogin, client: &MongoClient) -> Result<User, String> {
+        let db = client.database(std::env::var("DATABASE_NAME")
+                                    .expect("Error retrieving database name")
+                                        .as_str());
+        let user_collection = db.collection("users");
+        let email = user_to_find.email.clone();
+        let password = user_to_find.password.clone();
+
+        let user_filter = doc!{"email": email};
+        match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
+            Some(user_found) => match bson::from_bson::<User>(bson::Bson::Document(user_found)) {
+                Ok(user) => Ok(user),
+                Err(e) => Err("User not found".to_string()),
+            },
+            None => Err("Email or password mismatch".to_string())
         }
     }
 }

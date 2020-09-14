@@ -1,43 +1,14 @@
 mod models;
 mod auth;
+mod controllers;
 
 extern crate argon2;
 
-use crate::models::user::User;
-use crate::auth::authentication;
+use crate::controllers::user_controller;
 use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
-use listenfd::ListenFd;
 use mongodb::options::ResolverConfig;
-
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
-
-async fn index2() -> impl Responder {
-    HttpResponse::Ok().body("Hello world 3")
-}
-
-async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>) -> impl Responder {
-    let user = user_json.into_inner();
-
-    println!("{:?}", user);
-
-    match User::validate(user, &client).await {
-        Ok(mut validated_user) => {
-            println!("{:?}", validated_user);
-            let salted_pass = authentication::salt_password(validated_user.password.clone());
-            validated_user.password = salted_pass;
-            User::insert(validated_user, &client).await;
-
-            HttpResponse::Ok().body("Todo chido")
-        },
-        Err(e) => {
-            println!("{}", e.clone());
-            HttpResponse::BadRequest().body(e)
-        },
-    }
-}
+use serde::{Serialize, Deserialize};
 
 type MongoClient = mongodb::Client;
 
@@ -54,19 +25,18 @@ async fn main() -> std::io::Result<()> {
     mongo_options.app_name = Some("YeoHengServer".to_string());
     let mongo_client = Client::with_options(mongo_options).expect("Error found while creating mongo client");
 
-    let mut listenfd = ListenFd::from_env();
-    let  mut server = HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .data(mongo_client.clone())
             .wrap(middleware::Logger::default())
-            .route("/", web::get().to(index))
-            .route("/again", web::get().to(index2))
-            .route("/signup", web::post().to(register))
+            .route("/", web::get().to(user_controller::index))
+            .route("/login", web::post().to(user_controller::login))
+            .route("/signup", web::post().to(user_controller::register))
     });
 
-    let address = format!("127.0.0.1:{}",match std::env::var("PORT") {
+    let address = format!("0.0.0.0:{}",match std::env::var("PORT") {
         Ok(p) => p,
-        Err(e) => "3000".to_string(),
+        Err(_e) => "3000".to_string(),
     });
 
     println!("{}", address);
