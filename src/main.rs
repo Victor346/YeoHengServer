@@ -9,6 +9,10 @@ use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
 use serde::{Serialize, Deserialize};
+use rusoto_core::Region;
+use rusoto_s3::{S3, S3Client, PutObjectRequest};
+use rusoto_s3::util::PreSignedRequest;
+use rusoto_core::credential::{DefaultCredentialsProvider, ProvideAwsCredentials};
 
 type MongoClient = mongodb::Client;
 
@@ -17,6 +21,33 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
     dotenv::dotenv().ok();
+
+    let mut s3_client = S3Client::new(Region::UsEast1);
+
+    let resp = s3_client.list_buckets().await;
+
+    let resp = resp.unwrap();
+    for bucket in resp.buckets.unwrap().iter() {
+        println!("{}", bucket.name.as_ref().unwrap());
+    }
+
+
+    let req = PutObjectRequest {
+        bucket: "yeoheng-itesm-2020".to_string(),
+        key: "temp/hasofoasdhf.jpg".to_string(),
+        content_type: Some("image/jpeg".to_string()),
+        content_disposition: Some("attachment; filename=")
+        ..Default::default()
+    };
+
+    let credential = DefaultCredentialsProvider::new()
+        .unwrap()
+        .credentials()
+        .await
+        .unwrap();
+
+    let presigned_url = req.get_presigned_url(&Region::UsEast1, &credential, &Default::default());
+    println!("{:?}", presigned_url);
 
     let mut mongo_options = ClientOptions::parse_with_resolver_config(
         std::env::var("MONGO_URL").expect("Error in Mongo URL").as_str(),
