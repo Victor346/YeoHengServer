@@ -35,8 +35,6 @@ async fn main() -> std::io::Result<()> {
     let req = PutObjectRequest {
         bucket: "yeoheng-itesm-2020".to_string(),
         key: "temp/hasofoasdhf.jpg".to_string(),
-        content_type: Some("image/jpeg".to_string()),
-        content_disposition: Some("attachment; filename=")
         ..Default::default()
     };
 
