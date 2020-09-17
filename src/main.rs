@@ -12,6 +12,7 @@ use mongodb::options::ResolverConfig;
 use serde::{Serialize, Deserialize};
 use rusoto_core::Region;
 use rusoto_s3::S3Client;
+use actix_cors::Cors;
 
 type MongoClient = mongodb::Client;
 
@@ -35,6 +36,11 @@ async fn main() -> std::io::Result<()> {
             .data(mongo_client.clone())
             .data(s3_client.clone())
             .wrap(middleware::Logger::default())
+            .wrap(
+                Cors::new()
+                    .send_wildcard()
+                    .finish()
+            )
             .route("/", web::get().to(user_controller::index))
             .route("/login", web::post().to(user_controller::login))
             .route("/signup", web::post().to(user_controller::register))
