@@ -13,10 +13,10 @@ pub struct Event {
     description: String,
     tags: Vec<String>,
     personal_type: String,
-    rating: f32,
+    rating: Option<f32>,
     country: String,
     city: String,
-    location: Vec<f64>,
+    location: Option<Vec<f64>>,
     image: String,
 }
 
@@ -56,10 +56,10 @@ impl Event {
             "description": self.description.clone(),
             "tags": self.tags.clone(),
             "personal_type": self.personal_type.clone(),
-            "rating": self.rating.clone(),
+            "rating": self.rating.unwrap_or_else(|| 5.0).clone(),
             "country": self.country.clone(),
             "city": self.city.clone(),
-            "location": self.location.clone(),
+            "location": self.location.as_ref().unwrap().clone(),
             "image": self.image.clone(),
         }
     }
