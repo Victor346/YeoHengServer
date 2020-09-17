@@ -9,6 +9,7 @@ use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
 use serde::{Serialize, Deserialize};
+use actix_cors::Cors;
 
 type MongoClient = mongodb::Client;
 
@@ -29,6 +30,11 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(mongo_client.clone())
             .wrap(middleware::Logger::default())
+            .wrap(
+                Cors::new()
+                    .send_wildcard()
+                    .finish()
+            )
             .route("/", web::get().to(user_controller::index))
             .route("/login", web::post().to(user_controller::login))
             .route("/signup", web::post().to(user_controller::register))
