@@ -33,6 +33,8 @@ async fn main() -> std::io::Result<()> {
             .route("/signup", web::post().to(user_controller::register))
             .service(web::resource("/protected")
                 .route(web::post().to(event_controller::create_event)))
+            .service(web::resource("/events")
+                .route(web::post().to(event_controller::get_all_events)))
     });
 
     let address = format!("0.0.0.0:{}",match std::env::var("PORT") {
