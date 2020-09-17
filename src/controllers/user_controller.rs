@@ -62,10 +62,3 @@ pub async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>
         },
     }
 }
-
-pub async fn protected(client: web::Data<MongoClient>, user_json: web::Json<User>, _: check_user::CheckLogin) -> HttpResponse {
-    let user = user_json.into_inner();
-    println!("{:?}", user);
-
-    HttpResponse::Ok().json(user)
-}

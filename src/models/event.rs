@@ -1,10 +1,12 @@
 use crate::MongoClient;
 
-use serde::{Deserialize, Serialize};
+use serde::de;
+use serde::{Deserialize, Serialize, Deserializer};
 use bson::oid::ObjectId;
 use mongodb::bson::doc;
 use mongodb::options::{FindOneOptions, InsertOneOptions};
 use mongodb::bson::Document;
+use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
@@ -18,6 +20,16 @@ pub struct Event {
     city: String,
     location: Option<Vec<f64>>,
     image: String,
+    #[serde(deserialize_with = "string_to_objectid")]
+    user_id: ObjectId,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EventFilter {
+    offset: i16,
+    limit: i8,
+    #[serde(deserialize_with = "string_to_objectid")]
+    user_id: Option<ObjectId>,
 }
 
 impl Event {
@@ -61,6 +73,35 @@ impl Event {
             "city": self.city.clone(),
             "location": self.location.as_ref().unwrap().clone(),
             "image": self.image.clone(),
+            "user_id": self.user_id.clone(),
         }
     }
+}
+
+// Deserializa el String y la convierte en ObjectId
+fn string_to_objectid<'de, D>(deserializer: D) -> Result<ObjectId, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    struct ObjectIdVisitor;
+
+    impl<'de> de::Visitor<'de> for ObjectIdVisitor {
+        type Value = ObjectId;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string containing object id")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+        {
+            match ObjectId::with_string(v) {
+                Ok(oi) => Ok(oi),
+                Err(e) => Err(E::custom("Not a ObjectId format")),
+            }
+        }
+    }
+
+    deserializer.deserialize_any(ObjectIdVisitor)
 }
