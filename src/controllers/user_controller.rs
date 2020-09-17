@@ -1,7 +1,7 @@
 use crate::models::user::{User, UserLogin};
-use crate::auth::authentication;
+use crate::auth::{authentication, check_user};
 use crate::MongoClient;
-use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
+use actix_web::{web, HttpResponse, Responder};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +17,7 @@ pub async fn index() -> impl Responder {
 pub async fn login(client: web::Data<MongoClient>, user_form: web::Form<UserLogin>) -> impl Responder {
     let user_login = user_form.into_inner();
 
-    match User::findUser(user_login, &client).await {
+    match User::find_user(user_login, &client).await {
         Ok(validated_user) => {
             let user_id = validated_user._id.clone().unwrap();
             let username = validated_user.username.clone();
