@@ -3242,6 +3242,7 @@ dependencies = [
  "futures",
  "jsonwebtoken",
  "listenfd",
+ "log",
  "mongodb",
  "regex",
  "rusoto_core",
@@ -3249,6 +3250,7 @@ dependencies = [
  "rust-argon2",
  "serde",
  "serde_json",
+ "uuid 0.8.1",
 ]
 
 [[package]]

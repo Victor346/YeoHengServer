@@ -7,6 +7,7 @@ use mongodb::bson::doc;
 use mongodb::options::{FindOneOptions, InsertOneOptions};
 use mongodb::bson::Document;
 use std::fmt;
+use log::kv::Visitor;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
@@ -28,8 +29,7 @@ pub struct Event {
 pub struct EventFilter {
     offset: i16,
     limit: i8,
-    #[serde(deserialize_with = "string_to_objectid")]
-    user_id: Option<ObjectId>,
+    user_id: Option<String>,
 }
 
 impl Event {
