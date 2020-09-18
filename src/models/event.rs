@@ -51,7 +51,9 @@ pub struct EventFilter {
 
 impl Event {
     pub async fn get_all(event_filter: EventFilter, client: &MongoClient) -> Vec<Event>{
-        let db = client.database("yeohengDev");
+        let db = client.database(std::env::var("DATABASE_NAME")
+                        .expect("Error retrieving database name")
+                        .as_str());
         let event_collection = db.collection("events");
         let find_options = FindOptions::builder().limit(event_filter.limit).skip(event_filter.offset).build();
 
@@ -82,7 +84,9 @@ impl Event {
     }
 
     pub async fn create(event: EventCreate, client: &MongoClient) -> ObjectId {
-        let db = client.database("yeohengDev");
+        let db = client.database(std::env::var("DATABASE_NAME")
+                        .expect("Error retrieving database name")
+                        .as_str());
         let event_collection = db.collection("events");
         (*event_collection
             .insert_one(event.to_doc().await, InsertOneOptions::default())

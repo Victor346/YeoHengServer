@@ -49,7 +49,9 @@ impl User {
     }
 
     pub async fn insert(user: User, client: &MongoClient) -> ObjectId {
-        let db = client.database("yeohengDev");
+        let db = client.database(std::env::var("DATABASE_NAME")
+                        .expect("Error retrieving database name")
+                        .as_str());
         let user_collection = db.collection("users");
         (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())
