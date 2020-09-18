@@ -4,10 +4,9 @@ use bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneOptions, InsertOneOptions, FindOptions};
+use mongodb::options::{FindOneOptions, InsertOneOptions};
 use mongodb::bson::Document;
-use argon2::{self, Config};
-use futures::stream::StreamExt;
+use argon2::{self};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {

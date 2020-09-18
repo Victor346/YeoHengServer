@@ -1,15 +1,13 @@
 use crate::MongoClient;
 
 use serde::de;
-use serde::forward_to_deserialize_any;
-use serde::{Deserialize, Serialize, Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 use bson::oid::ObjectId;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneOptions, InsertOneOptions, FindOptions};
+use mongodb::options::{InsertOneOptions, FindOptions};
 use mongodb::bson::Document;
 use std::fmt;
 use futures::stream::StreamExt;
-use serde::ser::SerializeStruct;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
@@ -21,6 +19,8 @@ pub struct Event {
     rating: Option<f32>,
     country: String,
     city: String,
+    price: f32,
+    duration: String,
     location: Option<Vec<f64>>,
     image: String,
     user_id: ObjectId,
@@ -36,7 +36,9 @@ pub struct EventCreate {
     rating: Option<f32>,
     country: String,
     city: String,
-    location: Option<Vec<f64>>,
+    price: f32,
+    duration: String,
+    pub location: Option<Vec<f64>>,
     image: String,
     #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId,
@@ -61,7 +63,7 @@ impl Event {
             Some(s) => {
                 match ObjectId::with_string(s.as_str().as_ref()) {
                     Ok(oi) => doc! { "user_id": oi },
-                    Err(e) => doc! {},
+                    Err(_) => doc! {},
                 }
             },
             None => doc! {},
@@ -76,18 +78,29 @@ impl Event {
                         Ok(event) => events.push(event),
                         Err(e) => println!("{:?}", e),
                     },
-                Err(e) => println!("Error retriving Document"),
+                Err(_) => println!("Error retriving Document"),
             }
         }
 
         events
     }
 
+<<<<<<< HEAD
     pub async fn create(event: EventCreate, client: &MongoClient) -> ObjectId {
         let db = client.database(std::env::var("DATABASE_NAME")
                         .expect("Error retrieving database name")
                         .as_str());
+=======
+    pub async fn create(mut event: EventCreate, client: &MongoClient) -> ObjectId {
+        let db = client.database("yeohengDev");
+>>>>>>> 1b70de02e6012c92d9905b185bb89e208eb41826
         let event_collection = db.collection("events");
+
+        match event.location.clone() {
+            None => event.location = Some(vec![0.0, 0.0]),
+            Some(_) => (),
+        }
+
         (*event_collection
             .insert_one(event.to_doc().await, InsertOneOptions::default())
             .await
@@ -109,6 +122,8 @@ impl EventCreate {
             "rating": self.rating.unwrap_or_else(|| 5.0).clone(),
             "country": self.country.clone(),
             "city": self.city.clone(),
+            "price": self.price.clone(),
+            "duration": self.duration.clone(),
             "location": self.location.as_ref().unwrap().clone(),
             "image": self.image.clone(),
             "user_id": self.user_id.clone(),
@@ -118,8 +133,8 @@ impl EventCreate {
 
 // Deserializa el String y la convierte en ObjectId
 fn string_to_objectid<'de, D>(deserializer: D) -> Result<ObjectId, D::Error>
-where
-    D: de::Deserializer<'de>,
+    where
+        D: de::Deserializer<'de>,
 {
     struct ObjectIdVisitor;
 
@@ -136,7 +151,7 @@ where
         {
             match ObjectId::with_string(v) {
                 Ok(oi) => Ok(oi),
-                Err(e) => Err(E::custom("Not a ObjectId format")),
+                Err(_) => Err(E::custom("Not a ObjectId format")),
             }
         }
     }
