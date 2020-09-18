@@ -14,7 +14,7 @@ pub async fn create_event(client: web::Data<MongoClient>, event_json: web::Json<
     HttpResponse::Ok().json(event_id)
 }
 
-pub async fn get_all_events(client: web::Data<MongoClient>, event_json: web::Query<EventFilter>, _: check_user::CheckLogin) -> HttpResponse {
+pub async fn get_all_events(client: web::Data<MongoClient>, event_json: web::Query<EventFilter>) -> HttpResponse {
     let event_filter = event_json.into_inner();
 
     let events = Event::get_all(event_filter, &client).await;
