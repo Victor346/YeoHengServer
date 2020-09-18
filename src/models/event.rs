@@ -19,7 +19,7 @@ pub struct Event {
     rating: Option<f32>,
     country: String,
     city: String,
-    location: Option<Vec<f64>>,
+    pub location: Option<Vec<f64>>,
     image: String,
     #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId,
@@ -41,9 +41,15 @@ impl Event {
 
     }
 
-    pub async fn create(event: Event, client: &MongoClient) -> ObjectId {
+    pub async fn create(mut event: Event, client: &MongoClient) -> ObjectId {
         let db = client.database("yeohengDev");
         let event_collection = db.collection("events");
+
+        match event.location.clone() {
+            None => event.location = Some(vec![0.0, 0.0]),
+            Some(_) => (),
+        }
+
         (*event_collection
             .insert_one(event.to_doc().await, InsertOneOptions::default())
             .await

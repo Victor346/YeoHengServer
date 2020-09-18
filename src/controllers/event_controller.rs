@@ -26,7 +26,7 @@ pub struct PresignedResponse {
     public_url: String,
 }
 
-pub async fn get_presigned_url(presigned_req_json: web::Json<PresignedRequest>) -> HttpResponse {
+pub async fn get_presigned_url(presigned_req_json: web::Query<PresignedRequest>, _: check_user::CheckLogin) -> HttpResponse {
     let req_info = presigned_req_json.into_inner();
 
     let presigned_url = create_presgigned_url(

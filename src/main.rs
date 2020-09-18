@@ -6,7 +6,7 @@ mod utils;
 extern crate argon2;
 
 use crate::controllers::{user_controller, event_controller};
-use actix_web::{web, middleware, App, HttpServer};
+use actix_web::{web, middleware, App, HttpServer, HttpResponse};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
 use serde::{Serialize, Deserialize};
@@ -44,9 +44,15 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(user_controller::index))
             .route("/login", web::post().to(user_controller::login))
             .route("/signup", web::post().to(user_controller::register))
-            .route("event/presigned", web::get().to(event_controller::get_presigned_url))
-            .service(web::resource("/protected")
-                .route(web::post().to(event_controller::create_event)))
+            .service(
+                web::scope("/event")
+                    .route("/presigned", web::get().to(event_controller::get_presigned_url))
+                    .route("/create", web::post().to(event_controller::create_event))
+            )
+            .default_service(
+                web::route()
+                    .to(|| HttpResponse::NotFound())
+            )
     });
 
     let address = format!("0.0.0.0:{}",match std::env::var("PORT") {
