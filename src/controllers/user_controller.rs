@@ -1,13 +1,14 @@
 use crate::models::user::{User, UserLogin};
-use crate::auth::authentication;
+use crate::auth::{authentication, check_user};
 use crate::MongoClient;
-use actix_web::{web, middleware, App, HttpResponse, Responder, HttpServer};
+use actix_web::{web, HttpResponse, Responder};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct UserResponse{
     jwt: String,
     username: String,
+    id: String,
 }
 
 pub async fn index() -> impl Responder {
@@ -17,15 +18,17 @@ pub async fn index() -> impl Responder {
 pub async fn login(client: web::Data<MongoClient>, user_form: web::Form<UserLogin>) -> impl Responder {
     let user_login = user_form.into_inner();
 
-    match User::findUser(user_login, &client).await {
+    match User::find_user(user_login, &client).await {
         Ok(validated_user) => {
             let user_id = validated_user._id.clone().unwrap();
             let username = validated_user.username.clone();
             let jwt = authentication::generate_jwt(user_id);
+            let user_id = validated_user._id.clone().unwrap().to_hex();
             
             let response = UserResponse{
-                jwt: jwt,
-                username: username
+                jwt,
+                username,
+                id: user_id,
             };
 
             HttpResponse::Ok().json(response)
@@ -47,11 +50,12 @@ pub async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>
             let username = validated_user.username.clone();
             validated_user.password = salted_pass;
             let user_id = User::insert(validated_user, &client).await;
+            let id = user_id.clone().to_hex();
             let jwt = authentication::generate_jwt(user_id);
-            
             let response = UserResponse{
-                jwt: jwt,
-                username: username
+                jwt,
+                username,
+                id,
             };
 
             HttpResponse::Created().json(response)

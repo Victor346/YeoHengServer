@@ -1,5 +1,3 @@
-use crate::models::user::User;
-
 use bson::oid::ObjectId;
 use serde::{Serialize, Deserialize};
 use argon2::{self, Config};
@@ -8,7 +6,7 @@ use jsonwebtoken::{encode, decode, Header, Algorithm, Validation,
 use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct MyClaims {
+pub struct MyClaims {
     iss: String,
     sub: String,
     exp: i64,

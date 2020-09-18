@@ -1,10 +1,13 @@
+use crate::MongoClient;
+
 use bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 use mongodb::bson::doc;
-use crate::MongoClient;
-use mongodb::options::{FindOneOptions, InsertOneOptions};
+use mongodb::options::{FindOneOptions, InsertOneOptions, FindOptions};
 use mongodb::bson::Document;
+use argon2::{self, Config};
+use futures::stream::StreamExt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -58,17 +61,7 @@ impl User {
             .clone()
     }
 
-    pub async fn to_doc(&self) -> Document {
-        doc! {
-            "name": self.name.clone(),
-            "username": self.username.clone(),
-            "password": self.password.clone(),
-            "role": "user",
-            "email": self.email.clone()
-        }
-    }
-
-    pub async fn findUser(user_to_find: UserLogin, client: &MongoClient) -> Result<User, String> {
+    pub async fn find_user(user_to_find: UserLogin, client: &MongoClient) -> Result<User, String> {
         let db = client.database(std::env::var("DATABASE_NAME")
                                     .expect("Error retrieving database name")
                                         .as_str());
@@ -78,12 +71,28 @@ impl User {
 
         let user_filter = doc!{"email": email};
         match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
-            Some(user_found) => match bson::from_bson::<User>(bson::Bson::Document(user_found)) {
-                Ok(user) => Ok(user),
-                Err(e) => Err("User not found".to_string()),
+            Some(user_found) => {
+                match bson::from_bson::<User>(bson::Bson::Document(user_found)) {
+                    Ok(user) => {
+                        match argon2::verify_encoded(&user.password, password.as_bytes()).unwrap() {
+                            true => Ok(user),
+                            false => Err("Email or password mismatch".to_string())
+                        }
+                    },
+                    Err(_e) => Err("Incorrect Struct".to_string()),
+                }
             },
-            None => Err("Email or password mismatch".to_string())
+            None => Err("User not found".to_string())
+        }
+    }
+
+    pub async fn to_doc(&self) -> Document {
+        doc! {
+            "name": self.name.clone(),
+            "username": self.username.clone(),
+            "password": self.password.clone(),
+            "role": "user",
+            "email": self.email.clone()
         }
     }
 }
-
