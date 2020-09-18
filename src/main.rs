@@ -9,7 +9,6 @@ use crate::controllers::{user_controller, event_controller};
 use actix_web::{web, middleware, App, HttpServer, HttpResponse};
 use mongodb::{Client, options::ClientOptions};
 use mongodb::options::ResolverConfig;
-use serde::{Serialize, Deserialize};
 use rusoto_core::Region;
 use rusoto_s3::S3Client;
 use actix_cors::Cors;
@@ -22,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
     dotenv::dotenv().ok();
 
-    let mut s3_client = S3Client::new(Region::UsEast1);
+    let s3_client = S3Client::new(Region::UsEast1);
 
     let mut mongo_options = ClientOptions::parse_with_resolver_config(
         std::env::var("MONGO_URL").expect("Error in Mongo URL").as_str(),
@@ -46,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .route("/signup", web::post().to(user_controller::register))
             .service(
                 web::scope("/event")
-                    .route("/", web::get().to(event_controller::get_all_events))
+                    .route("", web::get().to(event_controller::get_all_events))
                     .route("/presigned", web::get().to(event_controller::get_presigned_url))
                     .route("/create", web::post().to(event_controller::create_event))
             )

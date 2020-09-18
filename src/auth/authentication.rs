@@ -1,8 +1,7 @@
 use bson::oid::ObjectId;
 use serde::{Serialize, Deserialize};
 use argon2::{self, Config};
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation,
-    EncodingKey, DecodingKey};
+use jsonwebtoken::{encode, Header, Algorithm, EncodingKey};
 use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize)]

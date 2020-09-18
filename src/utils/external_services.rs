@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub async fn create_presgigned_url(username: String, file_extension: String, folder: String) -> Result<(String, String), String>{
     let bucket_name = match std::env::var("S3_BUCKET") {
         Ok(bn) => bn,
-        Err(e) => return Err("Error al obtener env".to_string()),
+        Err(_) => return Err("Error al obtener env".to_string()),
     };
     let file_uuid = Uuid::new_v4();
     let file_key = format!("{}/{}/{}.{}",
