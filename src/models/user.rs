@@ -4,10 +4,9 @@ use bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneOptions, InsertOneOptions, FindOptions};
+use mongodb::options::{FindOneOptions, InsertOneOptions};
 use mongodb::bson::Document;
-use argon2::{self, Config};
-use futures::stream::StreamExt;
+use argon2::{self};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -49,7 +48,9 @@ impl User {
     }
 
     pub async fn insert(user: User, client: &MongoClient) -> ObjectId {
-        let db = client.database("yeohengDev");
+        let db = client.database(std::env::var("DATABASE_NAME")
+                        .expect("Error retrieving database name")
+                        .as_str());
         let user_collection = db.collection("users");
         (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())

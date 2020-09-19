@@ -1,5 +1,5 @@
 use crate::models::user::{User, UserLogin};
-use crate::auth::{authentication, check_user};
+use crate::auth::{authentication};
 use crate::MongoClient;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Serialize, Deserialize};
