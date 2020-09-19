@@ -85,15 +85,10 @@ impl Event {
         events
     }
 
-<<<<<<< HEAD
-    pub async fn create(event: EventCreate, client: &MongoClient) -> ObjectId {
+    pub async fn create(mut event: EventCreate, client: &MongoClient) -> ObjectId {
         let db = client.database(std::env::var("DATABASE_NAME")
                         .expect("Error retrieving database name")
                         .as_str());
-=======
-    pub async fn create(mut event: EventCreate, client: &MongoClient) -> ObjectId {
-        let db = client.database("yeohengDev");
->>>>>>> 1b70de02e6012c92d9905b185bb89e208eb41826
         let event_collection = db.collection("events");
 
         match event.location.clone() {
