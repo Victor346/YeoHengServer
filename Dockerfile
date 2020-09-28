@@ -5,5 +5,5 @@ WORKDIR /target/release
 FROM debian:stable
 RUN apt-get update
 RUN apt-get -y install libssl-dev
-COPY --from=builder /target/release .
+COPY --from=builder /target/release/yeoheng-server .
 CMD ["./yeoheng-server"]
