@@ -55,7 +55,7 @@ impl User {
         (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())
             .await
-            .expect("Error in find user")
+            .expect("Error inserting User")
             .inserted_id
             .as_object_id()
             .unwrap())
