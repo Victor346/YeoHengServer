@@ -1,4 +1,4 @@
-use crate::MongoClient;
+use crate::MongoDb;
 use crate::utils::custom_visitors::ObjectIdVisitor;
 
 use serde::{de, Deserialize, Serialize};
@@ -22,6 +22,7 @@ pub struct Event {
     duration: String,
     location: Option<Vec<f64>>,
     image: String,
+    private: bool,
     #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId,
 }
@@ -42,6 +43,7 @@ pub struct EventUpdate {
     duration: Option<String>,
     location: Option<Vec<f64>>,
     image: Option<String>,
+    private: Option<bool>,
     #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId,
 }
@@ -53,11 +55,14 @@ pub struct EventFilter {
     user_id: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EventFindById {
+    #[serde(deserialize_with = "string_to_objectid")]
+    user_id: ObjectId,
+}
+
 impl Event {
-    pub async fn get_all(event_filter: EventFilter, client: &MongoClient) -> Vec<Event>{
-        let db = client.database(std::env::var("DATABASE_NAME")
-                        .expect("Error retrieving database name")
-                        .as_str());
+    pub async fn get_all(event_filter: EventFilter, db: &MongoDb) -> Vec<Event>{
         let event_collection = db.collection("events");
 
         // Create a custom find option
@@ -71,10 +76,10 @@ impl Event {
             Some(s) => {
                 match ObjectId::with_string(s.as_str().as_ref()) {
                     Ok(oi) => doc! { "user_id": oi },
-                    Err(_) => doc! {},
+                    Err(_) => doc! {"private": false},
                 }
             },
-            None => doc! {},
+            None => doc! {"private": false},
         };
 
         let mut cursor = event_collection.find(filter, find_options).await.expect("Error finding collection");
@@ -93,10 +98,7 @@ impl Event {
         events
     }
 
-    pub async fn create(mut event: Event, client: &MongoClient) -> ObjectId {
-        let db = client.database(std::env::var("DATABASE_NAME")
-            .expect("Error retrieving database name")
-            .as_str());
+    pub async fn create(mut event: Event, db: &MongoDb) -> ObjectId {
         let event_collection = db.collection("events");
 
         // If the Event location is empty create a default one
@@ -128,16 +130,14 @@ impl Event {
             "duration": self.duration.clone(),
             "location": self.location.as_ref().unwrap().clone(),
             "image": self.image.clone(),
+            "private": self.private.clone(),
             "user_id": self.user_id.clone(),
         }
     }
 }
 
 impl EventUpdate {
-        pub async fn update(event: EventUpdate, client: &MongoClient) -> Result<Event, String> {
-        let db = client.database(std::env::var("DATABASE_NAME")
-            .expect("Error retrieving database name")
-            .as_str());
+    pub async fn update(event: EventUpdate, db: &MongoDb) -> Result<Event, String> {
         let event_collection = db.collection("events");
 
         // Check which field is being updated
@@ -184,6 +184,10 @@ impl EventUpdate {
         };
         match event.image {
             Some(s) => update.insert("image", s),
+            None => Some(Bson::default())
+        };
+        match event.private {
+            Some(b) => update.insert("private", b),
             None => Some(Bson::default())
         };
 
