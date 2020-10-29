@@ -56,7 +56,8 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/trip")
-                    .route("/", web::post().to(trip_controller::create_trip))
+                    .route("", web::post().to(trip_controller::create_trip))
+                    .route("", web::put().to(trip_controller::update_trip))
             )
             .default_service(
                 web::route()
