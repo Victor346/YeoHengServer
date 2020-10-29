@@ -1,4 +1,4 @@
-use crate::models::event::{Event, EventCreate, EventFilter};
+use crate::models::event::{Event, EventUpdate, EventFilter};
 use crate::utils::external_services::create_presgigned_url;
 use crate::auth::{check_user};
 use crate::MongoClient;
@@ -6,20 +6,35 @@ use log::debug;
 use actix_web::{web, HttpResponse};
 use serde::{Serialize, Deserialize};
 
-pub async fn create_event(client: web::Data<MongoClient>, event_json: web::Json<EventCreate>, _: check_user::CheckLogin) -> HttpResponse {
-    let event = event_json.into_inner();
+pub async fn create_event(client: web::Data<MongoClient>, event_json: web::Json<Event>,
+                          _: check_user::CheckLogin) -> HttpResponse {
 
+    let event = event_json.into_inner();
     let event_id = Event::create(event, &client).await;
 
     HttpResponse::Ok().json(event_id)
 }
 
-pub async fn get_all_events(client: web::Data<MongoClient>, event_json: web::Query<EventFilter>) -> HttpResponse {
-    let event_filter = event_json.into_inner();
+pub async fn get_all_events(client: web::Data<MongoClient>, event_json: web::Query<EventFilter>)
+                            -> HttpResponse {
 
+    let event_filter = event_json.into_inner();
     let events = Event::get_all(event_filter, &client).await;
 
     HttpResponse::Ok().json(events)
+}
+
+pub async fn update_event(client: web::Data<MongoClient>, event_json: web::Json<EventUpdate>,
+                          _: check_user::CheckLogin) -> HttpResponse {
+
+    let event = event_json.into_inner();
+    match EventUpdate::update(event, &client).await {
+        Ok(event) => HttpResponse::Ok().json(event),
+        Err(e) => {
+            println!("{}", e.clone());
+            HttpResponse::BadRequest().body(e)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -59,5 +74,4 @@ pub async fn get_presigned_url(presigned_req_json: web::Query<PresignedRequest>,
             HttpResponse::InternalServerError().body("Error creating presigned url")
         }
     }
-
 }
