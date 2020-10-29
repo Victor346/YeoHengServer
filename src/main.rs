@@ -58,6 +58,8 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/trip")
                     .route("", web::post().to(trip_controller::create_trip))
                     .route("", web::put().to(trip_controller::update_trip))
+                    .route("/add", web::put().to(trip_controller::add_event_entry))
+                    .route("/remove", web::put().to(trip_controller::remove_event_entry))
             )
             .default_service(
                 web::route()

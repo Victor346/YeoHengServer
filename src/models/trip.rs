@@ -4,12 +4,22 @@ use crate::utils::custom_visitors::ObjectIdVisitor;
 use serde::{de, Deserialize, Serialize};
 use bson::oid::ObjectId;
 use mongodb::bson::{doc, Bson};
-use mongodb::options::{FindOneOptions, FindOptions, InsertOneOptions, FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::{
+    FindOneOptions,
+    FindOptions,
+    InsertOneOptions,
+    FindOneAndUpdateOptions,
+    UpdateOptions,
+    ReturnDocument
+};
 use mongodb::bson::Document;
+use std::borrow::Borrow;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventEntry {
+    #[serde(deserialize_with = "string_to_objectid")]
     _id: ObjectId,
+    #[serde(deserialize_with = "string_to_objectid")]
     event_id: ObjectId,
     start_date: String,
     start_hour: String,
@@ -81,6 +91,42 @@ impl Trip {
                 }
             },
             None => Err("Trip not found".to_string()),
+        }
+    }
+
+    pub async fn push_event_entry(event_entry: EventEntry, db: &MongoDb) -> Result<String, String> {
+        let trip_collection = db.collection("trips");
+
+        match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
+                                         doc! {"$push": {"events": event_entry.borrow().to_doc()}},
+                                         UpdateOptions::default()
+        ).await {
+            Ok(_) => Ok("Event successfully added".to_string()),
+            Err(_) => Err("Event not found".to_string())
+        }
+    }
+
+    pub async fn pull_event_entry(event_entry: EventEntry, db: &MongoDb) -> Result<String, String> {
+        let trip_collection = db.collection("trips");
+
+        match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
+                                         doc! {"$pull": {"events": {"event_id": event_entry.event_id}}},
+                                         UpdateOptions::default()
+        ).await {
+            Ok(_) => Ok("Event successfully removed".to_string()),
+            Err(_) => Err("Event not found".to_string())
+        }
+    }
+}
+
+impl EventEntry {
+    pub fn to_doc(&self) -> Document {
+        doc! {
+            "_id": self._id.clone(),
+            "event_id": self.event_id.clone(),
+            "start_date": self.start_date.clone(),
+            "start_hour": self.start_hour.clone(),
+            "duration": self.duration.clone(),
         }
     }
 }
