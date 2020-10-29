@@ -1,34 +1,34 @@
 use crate::models::event::{Event, EventUpdate, EventFilter};
 use crate::utils::external_services::create_presgigned_url;
 use crate::auth::{check_user};
-use crate::MongoClient;
+use crate::MongoDb;
 use log::debug;
 use actix_web::{web, HttpResponse};
 use serde::{Serialize, Deserialize};
 
-pub async fn create_event(client: web::Data<MongoClient>, event_json: web::Json<Event>,
+pub async fn create_event(db: web::Data<MongoDb>, event_json: web::Json<Event>,
                           _: check_user::CheckLogin) -> HttpResponse {
 
     let event = event_json.into_inner();
-    let event_id = Event::create(event, &client).await;
+    let event_id = Event::create(event, &db).await;
 
     HttpResponse::Ok().json(event_id)
 }
 
-pub async fn get_all_events(client: web::Data<MongoClient>, event_json: web::Query<EventFilter>)
+pub async fn get_all_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>)
                             -> HttpResponse {
 
     let event_filter = event_json.into_inner();
-    let events = Event::get_all(event_filter, &client).await;
+    let events = Event::get_all(event_filter, &db).await;
 
     HttpResponse::Ok().json(events)
 }
 
-pub async fn update_event(client: web::Data<MongoClient>, event_json: web::Json<EventUpdate>,
+pub async fn update_event(db: web::Data<MongoDb>, event_json: web::Json<EventUpdate>,
                           _: check_user::CheckLogin) -> HttpResponse {
 
     let event = event_json.into_inner();
-    match EventUpdate::update(event, &client).await {
+    match EventUpdate::update(event, &db).await {
         Ok(event) => HttpResponse::Ok().json(event),
         Err(e) => {
             println!("{}", e.clone());
