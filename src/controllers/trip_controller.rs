@@ -1,10 +1,10 @@
-use crate::models::trip::{Trip, TripCreate, TripEdit, EventEntry};
+use crate::models::trip::{Trip, TripCreate, TripEdit, TripFilter, EventEntry};
 use crate::auth::check_user;
 use crate::MongoDb;
+
 use actix_web::{web, HttpResponse};
-use serde::{Serialize, Deserialize};
-use futures::Future;
 use actix_web::http::StatusCode;
+use std::collections::HashMap;
 
 pub async fn create_trip(db: web::Data<MongoDb>,
                          trip_json: web::Json<TripCreate>,
@@ -15,6 +15,44 @@ pub async fn create_trip(db: web::Data<MongoDb>,
     let trip_id = Trip::create(trip, &db).await;
 
     HttpResponse::Created().json(trip_id)
+}
+
+pub async fn get_trip(db: web::Data<MongoDb>, trip_json: web::Path<String>) -> HttpResponse {
+    let trip_id = trip_json.into_inner();
+
+    match Trip::get_trip(trip_id, &db).await {
+        Ok(trip) => HttpResponse::Ok().json(trip),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
+
+pub async fn get_trips(db: web::Data<MongoDb>, trip_json: web::Query<TripFilter>) -> HttpResponse {
+    let trip_filter = trip_json.into_inner();
+    let trips = Trip::get_filtered_trips(trip_filter, &db).await;
+
+    HttpResponse::Ok().json(trips)
+}
+
+pub async fn count_trips(db: web::Data<MongoDb>, trip_json: web::Query<TripFilter>) -> HttpResponse {
+    let trip_filter = trip_json.into_inner();
+
+    match Trip::count_filtered_trips(trip_filter, &db).await {
+        Ok(count) => {
+            let mut map: HashMap<&str, i64> = HashMap::new();
+            map.insert("event_count", count);
+            HttpResponse::Ok().json(map)
+        },
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
+
+pub async fn delete_trip(db: web::Data<MongoDb>, trip_json: web::Path<String>) -> HttpResponse {
+    let trip_id = trip_json.into_inner();
+
+    match Trip::delete_trip(trip_id, &db).await {
+        Ok(_count) => HttpResponse::Ok().finish(),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
 }
 
 pub async fn update_trip(db: web::Data<MongoDb>,

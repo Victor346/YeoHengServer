@@ -21,7 +21,7 @@ impl<'de> Visitor<'de> for ObjectIdVisitor {
         }
     }
 
-    fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+    fn visit_map<A>(self, _map: A) -> Result<Self::Value, A::Error>
         where
             A: de::MapAccess<'de>,
     {

@@ -7,6 +7,7 @@ use mongodb::bson::{Bson, doc, Document};
 use mongodb::options::{
     InsertOneOptions,
     FindOptions,
+    FindOneOptions,
     FindOneAndUpdateOptions,
     CountOptions,
     ReturnDocument
@@ -66,13 +67,28 @@ pub struct EventFilter {
     user_id: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EventFindById {
-    #[serde(deserialize_with = "string_to_objectid")]
-    user_id: ObjectId,
-}
-
 impl Event {
+    pub async fn get_event(event_id: String, db: &MongoDb) -> Result<Event, String> {
+        let event_collection = db.collection("events");
+
+        match ObjectId::with_string(event_id.as_str().as_ref()) {
+            Ok(oi) => {
+                match event_collection.find_one(doc! {"_id": oi}, FindOneOptions::default())
+                    .await.expect("Error finding event") {
+
+                    Some(event_found) => {
+                        match bson::from_bson::<Event>(bson::Bson::Document(event_found)) {
+                            Ok(event) => Ok(event),
+                            Err(_e) => Err("Incorrect Struct".to_string()),
+                        }
+                    },
+                    None => Err("Event not found".to_string()),
+                }
+            },
+            Err(_) => Err("Cannot convert given string to ObjectId".to_string()),
+        }
+    }
+
     pub async fn get_filtered_events(event_filter: EventFilter, db: &MongoDb) -> Vec<Event> {
         let event_collection = db.collection("events");
 
@@ -82,7 +98,7 @@ impl Event {
                             .skip(event_filter.offset)
                             .build();
 
-        // Check if the user is logged to filter his events
+        // Get custom filter
         let filter = get_find_filter(event_filter);
 
         let mut cursor = event_collection.find(filter, find_options).await.expect("Error finding collection");
@@ -110,12 +126,12 @@ impl Event {
             .skip(event_filter.offset)
             .build();
 
-        // Check if the user is logged to filter his events
+        // Get custom filter
         let filter = get_find_filter(event_filter);
 
         match event_collection.count_documents(filter, count_options).await {
             Ok(count) => Ok(count),
-            Err(e) => Err("Error counting document".to_string()),
+            Err(_) => Err("Error counting document".to_string()),
         }
     }
 

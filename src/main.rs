@@ -54,13 +54,18 @@ async fn main() -> std::io::Result<()> {
                     .route("/presigned", web::get().to(event_controller::get_presigned_url))
                     .route("/create", web::post().to(event_controller::create_event))
                     .route("/update", web::put().to(event_controller::update_event))
+                    .route("/{id}", web::get().to(event_controller::get_event))
             )
             .service(
                 web::scope("/trip")
+                    .route("", web::get().to(trip_controller::get_trips))
                     .route("", web::post().to(trip_controller::create_trip))
                     .route("", web::put().to(trip_controller::update_trip))
+                    .route("/count", web::get().to(trip_controller::count_trips))
                     .route("/add", web::put().to(trip_controller::add_event_entry))
                     .route("/remove", web::put().to(trip_controller::remove_event_entry))
+                    .route("/{id}", web::get().to(trip_controller::get_trip))
+                    .route("/{id}", web::delete().to(trip_controller::delete_trip))
             )
             .default_service(
                 web::route()
