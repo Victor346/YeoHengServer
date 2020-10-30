@@ -4,7 +4,13 @@ use crate::utils::custom_visitors::ObjectIdVisitor;
 use serde::{de, Deserialize, Serialize};
 use bson::oid::ObjectId;
 use mongodb::bson::{Bson, doc, Document};
-use mongodb::options::{InsertOneOptions, FindOptions, FindOneAndUpdateOptions, ReturnDocument};
+use mongodb::options::{
+    InsertOneOptions,
+    FindOptions,
+    FindOneAndUpdateOptions,
+    CountOptions,
+    ReturnDocument
+};
 use futures::stream::StreamExt;
 
 // Event struct to Retrieve and Create
@@ -52,6 +58,11 @@ pub struct EventUpdate {
 pub struct EventFilter {
     offset: i64,
     limit: i64,
+    tags: Option<String>,
+    personal_type: Option<String>,
+    rating: Option<f32>,
+    country: Option<String>,
+    city: Option<String>,
     user_id: Option<String>,
 }
 
@@ -62,7 +73,7 @@ pub struct EventFindById {
 }
 
 impl Event {
-    pub async fn get_all(event_filter: EventFilter, db: &MongoDb) -> Vec<Event>{
+    pub async fn get_filtered_events(event_filter: EventFilter, db: &MongoDb) -> Vec<Event> {
         let event_collection = db.collection("events");
 
         // Create a custom find option
@@ -72,15 +83,7 @@ impl Event {
                             .build();
 
         // Check if the user is logged to filter his events
-        let filter = match event_filter.user_id {
-            Some(s) => {
-                match ObjectId::with_string(s.as_str().as_ref()) {
-                    Ok(oi) => doc! { "user_id": oi },
-                    Err(_) => doc! {"private": false},
-                }
-            },
-            None => doc! {"private": false},
-        };
+        let filter = get_find_filter(event_filter);
 
         let mut cursor = event_collection.find(filter, find_options).await.expect("Error finding collection");
         let mut events = Vec::new();
@@ -96,6 +99,24 @@ impl Event {
         }
 
         events
+    }
+
+    pub async fn count_filtered_events(event_filter: EventFilter, db: &MongoDb) -> Result<i64, String> {
+        let event_collection = db.collection("events");
+
+        // Create a custom find option
+        let count_options = CountOptions::builder()
+            .limit(event_filter.limit)
+            .skip(event_filter.offset)
+            .build();
+
+        // Check if the user is logged to filter his events
+        let filter = get_find_filter(event_filter);
+
+        match event_collection.count_documents(filter, count_options).await {
+            Ok(count) => Ok(count),
+            Err(e) => Err("Error counting document".to_string()),
+        }
     }
 
     pub async fn create(mut event: Event, db: &MongoDb) -> ObjectId {
@@ -208,6 +229,45 @@ impl EventUpdate {
             None => Err("Event not found".to_string())
         }
     }
+}
+
+// Generate find's filter
+fn get_find_filter(event_filter: EventFilter) -> Document {
+    let mut filter = doc! {};
+    match event_filter.user_id {
+        Some(s) => {
+            match ObjectId::with_string(s.as_str().as_ref()) {
+                Ok(oi) => filter.insert("user_id", oi),
+                Err(_) => filter.insert("private", false),
+            }
+        },
+        None => filter.insert("private", false),
+    };
+    match event_filter.tags {
+        Some(v) => {
+            let tag_list: Vec<&str> = v.split(",").collect();
+            filter.insert("tags", doc! {"$in": tag_list})
+        },
+        None => Some(Bson::default()),
+    };
+    match event_filter.personal_type {
+        Some(s) => filter.insert("personal_type", s),
+        None => Some(Bson::default()),
+    };
+    match event_filter.rating {
+        Some(f) => filter.insert("rating", f),
+        None => Some(Bson::default()),
+    };
+    match event_filter.country {
+        Some(s) => filter.insert("country", s),
+        None => Some(Bson::default()),
+    };
+    match event_filter.city {
+        Some(s) => filter.insert("city", s),
+        None => Some(Bson::default()),
+    };
+
+    filter
 }
 
 // Deserialize the String and convert it to ObjectId

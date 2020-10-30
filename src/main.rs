@@ -49,7 +49,8 @@ async fn main() -> std::io::Result<()> {
             .route("/signup", web::post().to(user_controller::register))
             .service(
                 web::scope("/event")
-                    .route("", web::get().to(event_controller::get_all_events))
+                    .route("", web::get().to(event_controller::get_events))
+                    .route("/count", web::get().to(event_controller::count_events))
                     .route("/presigned", web::get().to(event_controller::get_presigned_url))
                     .route("/create", web::post().to(event_controller::create_event))
                     .route("/update", web::put().to(event_controller::update_event))
