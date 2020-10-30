@@ -5,6 +5,8 @@ use crate::MongoDb;
 use log::debug;
 use actix_web::{web, HttpResponse};
 use serde::{Serialize, Deserialize};
+use jsonwebtoken::errors::ErrorKind::Json;
+use std::collections::HashMap;
 
 pub async fn create_event(db: web::Data<MongoDb>, event_json: web::Json<Event>,
                           _: check_user::CheckLogin) -> HttpResponse {
@@ -15,13 +17,25 @@ pub async fn create_event(db: web::Data<MongoDb>, event_json: web::Json<Event>,
     HttpResponse::Ok().json(event_id)
 }
 
-pub async fn get_all_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>)
-                            -> HttpResponse {
-
+pub async fn get_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>
+) -> HttpResponse {
     let event_filter = event_json.into_inner();
-    let events = Event::get_all(event_filter, &db).await;
+    let events = Event::get_filtered_events(event_filter, &db).await;
 
     HttpResponse::Ok().json(events)
+}
+
+pub async fn count_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>
+) -> HttpResponse {
+    let event_filter = event_json.into_inner();
+    match Event::count_filtered_events(event_filter, &db).await {
+        Ok(count) => {
+            let mut map: HashMap<&str, i64> = HashMap::new();
+            map.insert("event_count", count);
+            HttpResponse::Ok().json(map)
+        },
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
 }
 
 pub async fn update_event(db: web::Data<MongoDb>, event_json: web::Json<EventUpdate>,
