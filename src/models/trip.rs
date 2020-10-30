@@ -19,9 +19,7 @@ use futures::stream::StreamExt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventEntry {
-    #[serde(deserialize_with = "string_to_objectid")]
     _id: ObjectId,
-    #[serde(deserialize_with = "string_to_objectid")]
     event_id: ObjectId,
     start_date: String,
     start_hour: String,
@@ -38,7 +36,6 @@ pub struct Trip {
     destination: String,
     events: Vec<EventEntry>,
     private: bool,
-    #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId
 }
 

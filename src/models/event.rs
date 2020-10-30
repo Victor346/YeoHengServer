@@ -30,7 +30,6 @@ pub struct Event {
     location: Option<Vec<f64>>,
     image: String,
     private: bool,
-    #[serde(deserialize_with = "string_to_objectid")]
     user_id: ObjectId,
 }
 
@@ -65,6 +64,7 @@ pub struct EventFilter {
     country: Option<String>,
     city: Option<String>,
     user_id: Option<String>,
+    include_private: Option<bool>,
 }
 
 impl Event {
@@ -282,6 +282,14 @@ fn get_find_filter(event_filter: EventFilter) -> Document {
         Some(s) => filter.insert("city", s),
         None => Some(Bson::default()),
     };
+    match event_filter.include_private {
+        Some(b) => {
+            if !b {
+                filter.insert("private", false);
+            }
+        },
+        None => (),
+    }
 
     filter
 }
