@@ -2,10 +2,10 @@ use crate::models::event::{Event, EventUpdate, EventFilter};
 use crate::utils::external_services::create_presgigned_url;
 use crate::auth::{check_user};
 use crate::MongoDb;
+
 use log::debug;
 use actix_web::{web, HttpResponse};
 use serde::{Serialize, Deserialize};
-use jsonwebtoken::errors::ErrorKind::Json;
 use std::collections::HashMap;
 
 pub async fn create_event(db: web::Data<MongoDb>, event_json: web::Json<Event>,
@@ -14,7 +14,16 @@ pub async fn create_event(db: web::Data<MongoDb>, event_json: web::Json<Event>,
     let event = event_json.into_inner();
     let event_id = Event::create(event, &db).await;
 
-    HttpResponse::Ok().json(event_id)
+    HttpResponse::Created().json(event_id)
+}
+
+pub async fn get_event(db: web::Data<MongoDb>, event_json: web::Path<String>) -> HttpResponse {
+    let event_id = event_json.into_inner();
+
+    match Event::get_event(event_id, &db).await {
+        Ok(event) => HttpResponse::Ok().json(event),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
 }
 
 pub async fn get_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>
