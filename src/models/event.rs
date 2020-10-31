@@ -17,20 +17,20 @@ use futures::stream::StreamExt;
 // Event struct to Retrieve and Create
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Event {
-    _id: Option<ObjectId>,
-    name: String,
-    description: String,
-    tags: Vec<String>,
-    personal_type: String,
-    rating: Option<f32>,
-    country: String,
-    city: String,
-    price: f32,
-    duration: String,
-    location: Option<Vec<f64>>,
-    image: String,
-    private: bool,
-    user_id: ObjectId,
+    pub _id: Option<ObjectId>,
+    pub name: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub personal_type: String,
+    pub rating: Option<f32>,
+    pub country: String,
+    pub city: String,
+    pub price: f32,
+    pub duration: String,
+    pub location: Option<Vec<f64>>,
+    pub image: String,
+    pub private: bool,
+    pub user_id: ObjectId,
 }
 
 // Event struct to Update and Delete
@@ -56,15 +56,15 @@ pub struct EventUpdate {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventFilter {
-    offset: i64,
-    limit: i64,
-    tags: Option<String>,
-    personal_type: Option<String>,
-    rating: Option<f32>,
-    country: Option<String>,
-    city: Option<String>,
-    user_id: Option<String>,
-    include_private: Option<bool>,
+    pub offset: i64,
+    pub limit: i64,
+    pub tags: Option<String>,
+    pub personal_type: Option<String>,
+    pub rating: Option<f32>,
+    pub country: Option<String>,
+    pub city: Option<String>,
+    pub user_id: Option<String>,
+    pub include_private: Option<bool>,
 }
 
 impl Event {
