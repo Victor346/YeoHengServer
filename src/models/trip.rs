@@ -29,7 +29,7 @@ pub struct EventEntry {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Trip {
     _id: ObjectId,
-    name: String,
+    pub name: String,
     start_date: String,
     end_date: String,
     budget: f32,
@@ -41,11 +41,11 @@ pub struct Trip {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TripFilter {
-    offset: i64,
-    limit: i64,
-    budget_gt: Option<f32>,
-    budget_lt: Option<f32>,
-    user_id: Option<String>,
+    pub offset: i64,
+    pub limit: i64,
+    pub budget_gt: Option<f32>,
+    pub budget_lt: Option<f32>,
+    pub user_id: Option<String>,
 }
 
 impl Trip {
@@ -116,9 +116,9 @@ impl Trip {
         }
     }
 
-    pub async fn create(mut trip: TripCreate, db: &MongoDb) -> ObjectId {
+    pub async fn create(trip: TripCreate, db: &MongoDb) -> ObjectId {
         let trip_collection = db.collection("trips");
-        let events: Vec<EventEntry> = Vec::new();
+
         (*trip_collection
             .insert_one(trip.to_doc().await, InsertOneOptions::default())
             .await
@@ -129,7 +129,7 @@ impl Trip {
             .clone()
     }
 
-    pub async fn update(mut edit_info: TripEdit, db: &MongoDb) -> Result<Trip, String> {
+    pub async fn update(edit_info: TripEdit, db: &MongoDb) -> Result<Trip, String> {
         let trip_collection = db.collection("trips");
         let mut update_doc = doc!{};
         match edit_info.name {
@@ -229,14 +229,14 @@ impl EventEntry {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TripCreate {
-    name: String,
-    start_date: String,
-    end_date: String,
-    budget: f32,
-    destination: String,
-    private: bool,
+    pub name: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub budget: f32,
+    pub destination: String,
+    pub private: bool,
     #[serde(deserialize_with = "string_to_objectid")]
-    user_id: ObjectId
+    pub user_id: ObjectId
 }
 
 impl TripCreate {
@@ -248,6 +248,7 @@ impl TripCreate {
             "budget": self.budget,
             "events": [],
             "destination": self.destination.clone(),
+            "private": self.private.clone(),
             "user_id": self.user_id.clone(),
         }
     }

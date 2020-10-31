@@ -2,6 +2,7 @@ mod models;
 mod auth;
 mod controllers;
 mod utils;
+mod tests;
 
 extern crate argon2;
 
