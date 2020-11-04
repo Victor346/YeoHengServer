@@ -5,7 +5,9 @@ use actix_web::{dev, Error, FromRequest, HttpRequest};
 use futures::future::{err, ok, Ready};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 
-pub struct CheckLogin;
+pub struct CheckLogin {
+    pub user_id: String,
+}
 
 impl FromRequest for CheckLogin {
     type Error = Error;
@@ -24,9 +26,11 @@ impl FromRequest for CheckLogin {
                 match decode::<MyClaims>(
                     token,
                     &DecodingKey::from_secret(key),
-                    &Validation::new(Algorithm::HS512),
+                    &Validation { algorithms: vec![Algorithm::HS512], ..Default::default() },
                 ) {
-                    Ok(_token) => ok(CheckLogin),
+                    Ok(token) => {
+                        ok(CheckLogin { user_id: token.claims.sub })
+                    },
                     Err(_e) => err(ErrorUnauthorized("invalid token!")),
                 }
             }
