@@ -1,4 +1,4 @@
-use crate::MongoClient;
+use crate::{MongoClient, MongoDb};
 
 use bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};

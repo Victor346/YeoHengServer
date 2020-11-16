@@ -6,9 +6,9 @@ use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MyClaims {
-    iss: String,
-    sub: String,
-    exp: i64,
+    pub iss: String,
+    pub sub: String,
+    pub exp: i64,
 }
 
 pub fn salt_password(password: String) -> String {
