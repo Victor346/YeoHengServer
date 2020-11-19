@@ -297,6 +297,7 @@ impl EventEntry {
             "event_id": self.event_id.clone(),
             "start_date": self.start_date.clone(),
             "start_hour": self.start_hour.clone(),
+            "budget": self.budget.clone(),
             "duration": self.duration.clone(),
         }
     }
@@ -307,6 +308,7 @@ impl EventEntry {
             "event_id": self.event_id.clone(),
             "start_date": self.start_date.clone(),
             "start_hour": self.start_hour.clone(),
+            "budget": self.budget.clone(),
             "duration": self.duration.clone(),
         }
     }
