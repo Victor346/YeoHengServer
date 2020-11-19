@@ -1,4 +1,4 @@
-use crate::models::trip::{Trip, TripCreate, TripEdit, TripFilter, EventEntry};
+use crate::models::trip::{Trip, TripCreate, TripEdit, TripFilter, EventEntry, TripFork};
 use crate::auth::check_user;
 use crate::MongoDb;
 
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 pub async fn create_trip(db: web::Data<MongoDb>,
                          trip_json: web::Json<TripCreate>,
-                         _: check_user::CheckLogin
+                         check: check_user::CheckLogin
 ) -> HttpResponse {
     let trip = trip_json.into_inner();
 
@@ -90,6 +90,18 @@ pub async fn remove_event_entry(db: web::Data<MongoDb>,
 
     match Trip::pull_event_entry(event_entry, &db).await {
         Ok(_) => HttpResponse::Ok().status(StatusCode::from_u16(201).unwrap()).finish(),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
+
+pub async fn fork_trip(db: web::Data<MongoDb>,
+                       entry_json: web::Json<TripFork>,
+                       check: check_user::CheckLogin
+) -> HttpResponse {
+    let trip_fork = entry_json.into_inner();
+
+    match Trip::fork(trip_fork, check.user_id, &db).await {
+        Ok(oi) => HttpResponse::Created().json(oi),
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }

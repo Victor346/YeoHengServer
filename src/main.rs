@@ -65,6 +65,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/count", web::get().to(trip_controller::count_trips))
                     .route("/add", web::put().to(trip_controller::add_event_entry))
                     .route("/remove", web::put().to(trip_controller::remove_event_entry))
+                    .route("/fork", web::post().to(trip_controller::fork_trip))
                     .route("/{id}", web::get().to(trip_controller::get_trip))
                     .route("/{id}", web::delete().to(trip_controller::delete_trip))
             )
