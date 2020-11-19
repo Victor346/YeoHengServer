@@ -15,14 +15,17 @@ use mongodb::options::{
     ReturnDocument
 };
 use std::borrow::Borrow;
+use std::clone::Clone;
 use futures::stream::StreamExt;
+use std::error::Error;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EventEntry {
     _id: ObjectId,
     event_id: ObjectId,
     start_date: String,
     start_hour: String,
+    budget: f32,
     duration: i32,
 }
 
@@ -48,15 +51,23 @@ pub struct TripFilter {
     pub user_id: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateTrip {
+    #[serde(deserialize_with = "string_to_objectid")]
+    id: ObjectId,
+    events: Vec<EventEntry>
+}
+
 impl Trip {
     pub async fn get_trip(trip_id: String, db: &MongoDb) -> Result<Trip, String> {
         let trip_collection = db.collection("trips");
 
         match ObjectId::with_string(trip_id.as_str().as_ref()) {
             Ok(oi) => {
-                match trip_collection.find_one(doc! {"_id": oi}, FindOneOptions::default())
-                    .await.expect("Error finding trip") {
-
+                match trip_collection.find_one(
+                    doc! {"_id": oi},
+                    FindOneOptions::default()
+                ).await.expect("Error finding trip"){
                     Some(trip_found) => {
                         match bson::from_bson::<Trip>(bson::Bson::Document(trip_found)) {
                             Ok(trip) => Ok(trip),
@@ -120,7 +131,7 @@ impl Trip {
         let trip_collection = db.collection("trips");
 
         (*trip_collection
-            .insert_one(trip.to_doc().await, InsertOneOptions::default())
+            .insert_one(trip.to_doc(), InsertOneOptions::default())
             .await
             .expect("Error in insert user")
             .inserted_id
@@ -179,8 +190,13 @@ impl Trip {
     pub async fn push_event_entry(event_entry: EventEntry, db: &MongoDb) -> Result<String, String> {
         let trip_collection = db.collection("trips");
 
+        let update_query = doc! {
+            "$push": {"events": event_entry.borrow().to_doc()},
+            "$inc": {"budget": event_entry.budget}
+        };
+
         match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
-                                         doc! {"$push": {"events": event_entry.borrow().to_doc()}},
+                                         update_query,
                                          UpdateOptions::default()
         ).await {
             Ok(_) => Ok("Event successfully added".to_string()),
@@ -190,6 +206,11 @@ impl Trip {
 
     pub async fn pull_event_entry(event_entry: EventEntry, db: &MongoDb) -> Result<String, String> {
         let trip_collection = db.collection("trips");
+
+        let update_query = doc! {
+            "$push": {"events": event_entry.borrow().to_doc()},
+            "$inc": {"budget": -event_entry.budget}
+        };
 
         match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
                                          doc! {"$pull": {"events": {"event_id": event_entry.event_id}}},
@@ -213,12 +234,76 @@ impl Trip {
             Err(_) => Err("Cannot convert given string to ObjectId".to_string()),
         }
     }
+
+    pub async fn fork(trip_fork: TripFork, user_id: String, db: &MongoDb) -> Result<ObjectId, String> {
+        let trip_collection = db.collection("trips");
+
+        match trip_collection.find_one(
+            doc! {"_id": trip_fork.to_fork_trip_id},
+            FindOneOptions::default()
+        ).await.expect("Error finding trip") {
+            Some(trip_found) => {
+                match bson::from_bson::<Trip>(bson::Bson::Document(trip_found)) {
+                    Ok(trip) => {
+                        println!("{}", user_id);
+                        let new_user_id = ObjectId::with_string(user_id.as_str().as_ref())
+                            .expect("Cannot convert given string to ObjectId");
+
+                        let new_trip = TripCreate {
+                            name: trip_fork.name,
+                            start_date: trip_fork.start_date,
+                            end_date: trip_fork.end_date,
+                            budget: trip.budget,
+                            destination: trip.destination,
+                            private: trip.private,
+                            user_id: new_user_id.clone(),
+                        };
+
+                        let new_trip_id = (*trip_collection.insert_one(
+                            new_trip.to_doc(),
+                            InsertOneOptions::default(),
+                        ).await
+                           .expect("Error inserting Trip")
+                           .inserted_id
+                           .as_object_id()
+                           .unwrap()
+                        ).clone();
+
+                        let new_events = trip.events.into_iter()
+                                                                     .map(|event_entry| event_entry
+                                                                         .to_doc_new_id(new_user_id.clone())
+                                                                     )
+                                                                     .collect::<Vec<Document>>();
+                        match trip_collection.update_one(doc! {"_id": new_trip_id.clone()},
+                                         doc! {"$set": {"events": new_events}},
+                                         UpdateOptions::default()
+                        ).await {
+                            Ok(_) => Ok(new_trip_id),
+                            Err(_e) => Err("Error updating Trip".to_string()),
+                        }
+                    },
+                    Err(_e) => Err("Incorrect Struct".to_string()),
+                }
+            },
+            None => Err("Trip not found".to_string()),
+        }
+    }
 }
 
 impl EventEntry {
     pub fn to_doc(&self) -> Document {
         doc! {
             "_id": self._id.clone(),
+            "event_id": self.event_id.clone(),
+            "start_date": self.start_date.clone(),
+            "start_hour": self.start_hour.clone(),
+            "duration": self.duration.clone(),
+        }
+    }
+
+    pub fn to_doc_new_id(&self, id: ObjectId) -> Document {
+        doc! {
+            "_id": id.clone(),
             "event_id": self.event_id.clone(),
             "start_date": self.start_date.clone(),
             "start_hour": self.start_hour.clone(),
@@ -240,7 +325,7 @@ pub struct TripCreate {
 }
 
 impl TripCreate {
-    pub async fn to_doc(&self) -> Document {
+    pub fn to_doc(&self) -> Document {
         doc! {
             "name": self.name.clone(),
             "start_date": self.start_date.clone(),
@@ -264,6 +349,15 @@ pub struct TripEdit {
     budget: Option<f32>,
     private: Option<bool>,
     destination: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TripFork {
+    pub name: String,
+    pub start_date: String,
+    pub end_date: String,
+    #[serde(deserialize_with = "string_to_objectid")]
+    pub to_fork_trip_id: ObjectId,
 }
 
 fn get_find_filter(trip_filter: TripFilter) -> Document {
