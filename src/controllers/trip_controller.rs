@@ -17,8 +17,8 @@ pub async fn create_trip(db: web::Data<MongoDb>,
     HttpResponse::Created().json(trip_id)
 }
 
-pub async fn get_trip(db: web::Data<MongoDb>, trip_json: web::Path<String>) -> HttpResponse {
-    let trip_id = trip_json.into_inner();
+pub async fn get_trip(db: web::Data<MongoDb>, trip_path: web::Path<String>) -> HttpResponse {
+    let trip_id = trip_path.into_inner();
 
     match Trip::get_trip(trip_id, &db).await {
         Ok(trip) => HttpResponse::Ok().json(trip),
@@ -46,8 +46,8 @@ pub async fn count_trips(db: web::Data<MongoDb>, trip_json: web::Query<TripFilte
     }
 }
 
-pub async fn delete_trip(db: web::Data<MongoDb>, trip_json: web::Path<String>) -> HttpResponse {
-    let trip_id = trip_json.into_inner();
+pub async fn delete_trip(db: web::Data<MongoDb>, trip_path: web::Path<String>) -> HttpResponse {
+    let trip_id = trip_path.into_inner();
 
     match Trip::delete_trip(trip_id, &db).await {
         Ok(_count) => HttpResponse::Ok().finish(),
@@ -76,7 +76,7 @@ pub async fn add_event_entry(db: web::Data<MongoDb>,
     let event_entry = entry_json.into_inner();
 
     match Trip::push_event_entry(event_entry, &db).await {
-        Ok(_) => HttpResponse::Ok().status(StatusCode::from_u16(201).unwrap()).finish(),
+        Ok(msg) => HttpResponse::Created().body(msg),
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
@@ -89,7 +89,7 @@ pub async fn remove_event_entry(db: web::Data<MongoDb>,
     let event_entry = entry_json.into_inner();
 
     match Trip::pull_event_entry(event_entry, &db).await {
-        Ok(_) => HttpResponse::Ok().status(StatusCode::from_u16(201).unwrap()).finish(),
+        Ok(msg) => HttpResponse::Created().body(msg),
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
