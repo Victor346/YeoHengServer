@@ -207,12 +207,12 @@ impl Trip {
         let trip_collection = db.collection("trips");
 
         let update_query = doc! {
-            "$push": {"events": event_entry.borrow().to_doc()},
+            "$pull": {"events": event_entry.borrow().to_doc()},
             "$inc": {"budget": -event_entry.budget}
         };
 
         match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
-                                         doc! {"$pull": {"events": {"event_id": event_entry.event_id}}},
+                                         update_query,
                                          UpdateOptions::default()
         ).await {
             Ok(_) => Ok("Event successfully removed".to_string()),

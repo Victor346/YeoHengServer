@@ -76,7 +76,7 @@ pub async fn add_event_entry(db: web::Data<MongoDb>,
     let event_entry = entry_json.into_inner();
 
     match Trip::push_event_entry(event_entry, &db).await {
-        Ok(msg) => HttpResponse::Created().body(msg),
+        Ok(msg) => HttpResponse::Ok().body(msg),
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
@@ -89,7 +89,7 @@ pub async fn remove_event_entry(db: web::Data<MongoDb>,
     let event_entry = entry_json.into_inner();
 
     match Trip::pull_event_entry(event_entry, &db).await {
-        Ok(msg) => HttpResponse::Created().body(msg),
+        Ok(msg) => HttpResponse::Ok().body(msg),
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
