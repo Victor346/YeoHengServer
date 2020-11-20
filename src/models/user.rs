@@ -14,7 +14,7 @@ pub struct User {
     name: String,
     pub username: String,
     pub password: String,
-    role: Option<String>,
+    pub role: Option<String>,
     email: String,
 }
 
