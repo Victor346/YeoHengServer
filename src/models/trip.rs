@@ -207,7 +207,7 @@ impl Trip {
         let trip_collection = db.collection("trips");
 
         let update_query = doc! {
-            "$push": {"events": event_entry.borrow().to_doc()},
+            "$pull": {"events": event_entry.borrow().to_doc()},
             "$inc": {"budget": -event_entry.budget}
         };
 
