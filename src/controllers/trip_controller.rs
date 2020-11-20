@@ -105,3 +105,16 @@ pub async fn fork_trip(db: web::Data<MongoDb>,
         Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
+
+pub async fn force_private(db: web::Data<MongoDb>,
+                           trip_path: web::Path<String>,
+                           check: check_user::CheckLogin
+) -> HttpResponse {
+    let trip_id = trip_path.into_inner();
+    let admin_id = check.user_id;
+
+    match Trip::force_private(trip_id, admin_id, &db).await {
+        Ok(msg) => HttpResponse::Created().body(msg),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
