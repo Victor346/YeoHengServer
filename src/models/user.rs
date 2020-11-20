@@ -99,12 +99,12 @@ impl User {
             FindOneOptions::default()
         ).await.expect("Error finding user") {
             Some(admin_found) => {
-                let admin_role = admin_found.get_str("role").expect("Error gettin admin role");
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
 
                 match admin_role {
                     "superadmin" => {
                         match user_collection.update_one(
-                            doc!{"_id": user_oid},
+                            doc!{"_id": user_oid, "role": "user"},
                             doc!{"$set": {"role": "admin"}},
                             UpdateOptions::default()
                         ).await {
@@ -131,17 +131,17 @@ impl User {
             FindOneOptions::default()
         ).await.expect("Error finding user") {
             Some(admin_found) => {
-                let admin_role = admin_found.get_str("role").expect("Error gettin admin role");
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
 
                 match admin_role {
                     "superadmin" => {
                         match user_collection.update_one(
-                            doc!{"_id": user_oid},
+                            doc!{"_id": user_oid, "role": "admin"},
                             doc!{"$set": {"role": "user"}},
                             UpdateOptions::default()
                         ).await {
                             Ok(_) => Ok("Successfully demoted user role".to_string()),
-                            Err(_) => Err("Error promoting user role".to_string())
+                            Err(_) => Err("Error demoting user role".to_string())
                         }
                     },
                     _ => Err("Access Denied: user don't have sufficient privileges".to_string())

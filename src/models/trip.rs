@@ -287,6 +287,39 @@ impl Trip {
             None => Err("Trip not found".to_string()),
         }
     }
+
+    pub async fn force_private(trip_id: String, admin_id: String, db: &MongoDb) -> Result<String, String> {
+        let event_collection = db.collection("events");
+        let user_collection = db.collection("users");
+        let trip_oid = ObjectId::with_string(trip_id.as_str().as_ref())
+            .expect("Cannot convert given string to ObjectId");
+        let admin_oid = ObjectId::with_string(admin_id.as_str().as_ref())
+            .expect("Cannot convert given string to ObjectId");
+
+        match user_collection.find_one(
+            doc!{"_id": admin_oid},
+            FindOneOptions::default()
+        ).await.expect("Error finding user") {
+            Some(admin_found) => {
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
+
+                match admin_role {
+                    "superadmin" | "admin" => {
+                        match event_collection.update_one(
+                            doc!{"_id": trip_oid},
+                            doc!{"$set": {"private": true}},
+                            UpdateOptions::default()
+                        ).await {
+                            Ok(_) => Ok("Successfully changed trip to private".to_string()),
+                            Err(_) => Err("Error changing trip to private".to_string())
+                        }
+                    },
+                    _ => Err("Access Denied: user don't have sufficient privileges".to_string())
+                }
+            },
+            None => Err("User not found".to_string())
+        }
+    }
 }
 
 impl EventEntry {
