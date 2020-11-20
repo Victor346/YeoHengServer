@@ -1,32 +1,30 @@
-use crate::models::event::{Event, EventFilter};
-
-use mongodb::{Client, options::ClientOptions};
-use mongodb::options::ResolverConfig;
-use bson::oid::ObjectId;
-use crate::MongoDb;
-
-fn type_of<T>(_: &T) -> &str {
-    std::any::type_name::<T>()
-}
-
-async fn get_mongo_db() -> MongoDb {
-    dotenv::dotenv().ok();
-
-    let mut mongo_options = ClientOptions::parse_with_resolver_config(
-        std::env::var("MONGO_URL").expect("Error in Mongo URL").as_str(),
-        ResolverConfig::cloudflare()
-    ).await.expect("Error found while creating client options");
-    mongo_options.app_name = Some("YeoHengServer".to_string());
-    let mongo_client = Client::with_options(mongo_options).expect("Error found while creating mongo client");
-    mongo_client.database(std::env::var("TEST_DATABASE_NAME")
-        .expect("Error retrieving database name")
-        .as_str())
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::models::event::{Event, EventFilter};
     use crate::MongoDb;
+
+    use mongodb::{Client, options::ClientOptions};
+    use mongodb::options::ResolverConfig;
+    use bson::oid::ObjectId;
+
+    fn type_of<T>(_: &T) -> &str {
+        std::any::type_name::<T>()
+    }
+
+    async fn get_mongo_db() -> MongoDb {
+        dotenv::dotenv().ok();
+
+        let mut mongo_options = ClientOptions::parse_with_resolver_config(
+            std::env::var("MONGO_URL").expect("Error in Mongo URL").as_str(),
+            ResolverConfig::cloudflare()
+        ).await.expect("Error found while creating client options");
+        mongo_options.app_name = Some("YeoHengServer".to_string());
+        let mongo_client = Client::with_options(mongo_options).expect("Error found while creating mongo client");
+        mongo_client.database(std::env::var("TEST_DATABASE_NAME")
+            .expect("Error retrieving database name")
+            .as_str())
+    }
 
     #[actix_rt::test]
     async fn test_create_event() {
