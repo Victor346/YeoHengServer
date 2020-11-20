@@ -80,7 +80,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/users")
-                    .route("/{str}", web::put().to(user_controller::get_all_like_user))
+                    .route("/{str}", web::get().to(user_controller::get_all_like_user))
             )
             .default_service(
                 web::route()
