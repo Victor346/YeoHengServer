@@ -1,6 +1,9 @@
 use crate::models::user::{User, UserLogin};
+use crate::auth::check_user;
 use crate::auth::{authentication};
 use crate::MongoClient;
+use crate::MongoDb;
+
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Serialize, Deserialize};
 
@@ -70,5 +73,31 @@ pub async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>
             println!("{}", e.clone());
             HttpResponse::BadRequest().body(e)
         },
+    }
+}
+
+pub async fn promote(db: web::Data<MongoDb>,
+                     user_path: web::Path<String>,
+                     check: check_user::CheckLogin
+) -> HttpResponse {
+    let user_id = user_path.into_inner();
+    let admin_id = check.user_id;
+
+    match User::promote_user(user_id, admin_id, &db).await {
+        Ok(msg) => HttpResponse::Created().body(msg),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
+
+pub async fn demote(db: web::Data<MongoDb>,
+                     user_path: web::Path<String>,
+                     check: check_user::CheckLogin
+) -> HttpResponse {
+    let user_id = user_path.into_inner();
+    let admin_id = check.user_id;
+
+    match User::demote_user(user_id, admin_id, &db).await {
+        Ok(msg) => HttpResponse::Created().body(msg),
+        Err(e) => HttpResponse::BadRequest().body(e),
     }
 }

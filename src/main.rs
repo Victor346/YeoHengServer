@@ -69,6 +69,11 @@ async fn main() -> std::io::Result<()> {
                     .route("/{id}", web::get().to(trip_controller::get_trip))
                     .route("/{id}", web::delete().to(trip_controller::delete_trip))
             )
+            .service(
+                web::scope("/user")
+                    .route("/promote/{id}", web::put().to(user_controller::promote))
+                    .route("/demote/{id}", web::put().to(user_controller::demote))
+            )
             .default_service(
                 web::route()
                     .to(|| HttpResponse::NotFound())
