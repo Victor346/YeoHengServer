@@ -174,9 +174,8 @@ impl Trip {
 
         match trip_collection.find_one_and_update(doc!{"_id": edit_info._id},
                                                   doc!{"$set": update_doc},
-                                                        find_update_options)
-            .await
-            .expect("Error updating Trip") {
+                                                        find_update_options
+        ).await.expect("Error updating Trip") {
             Some(trip_updated) => {
                 match bson::from_bson::<Trip>(bson::Bson::Document(trip_updated)) {
                     Ok(trip) => Ok(trip),
