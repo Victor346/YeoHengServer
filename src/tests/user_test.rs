@@ -64,4 +64,38 @@ mod test {
 
         assert_eq!(true, response.iter().count() > 0);
     }
+
+    #[actix_rt::test]
+    async fn test_promote_user(){
+        let mongo_db = get_mongo_db().await;
+
+        let response = User::promote_user("5fb746a300fdc2fc00d86b68".to_string(),
+                                          "5fb7437c00058e520064685f".to_string(),
+                                          &mongo_db).await.expect("Error: test promote user");
+
+        let response = User::demote_user("5fb746a300fdc2fc00d86b68".to_string(),
+                                          "5fb7437c00058e520064685f".to_string(),
+                                          &mongo_db).await.expect("Error: test promote user");
+
+        assert_eq!("Successfully demoted user role".to_string(), response);
+    }
+
+    #[actix_rt::test]
+    async fn test_validate_user(){
+        let mongo_db = get_mongo_db().await;
+
+        let user = User {
+            _id: None,
+            name: String::from("TestGet"),
+            username: String::from("test"),
+            password: String::from("test"),
+            role: None,
+            email: String::from("test@test.com"),
+        };
+
+        let response = User::validate(user, &mongo_db)
+            .await.expect_err("Error: validation passed");
+
+        assert_eq!("User is already registered".to_string(), response);
+    }
 }
