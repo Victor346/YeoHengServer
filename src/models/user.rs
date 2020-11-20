@@ -8,6 +8,7 @@ use mongodb::options::{FindOneOptions, InsertOneOptions, UpdateOptions, FindOpti
 use mongodb::bson::Document;
 use argon2::{self};
 use futures::StreamExt;
+use ureq::get;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -32,6 +33,24 @@ pub struct UserProfile {
 pub struct UserLogin {
     email: String,
     password: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GoogleUser {
+    pub _id: Option<ObjectId>,
+    name: String,
+    pub username: String,
+    pub password: String,
+    pub role: Option<String>,
+    email: String,
+    provider: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ProvidedGoogleUser {
+    name: String,
+    pub email: String,
+    pub token_id: String,
 }
 
 impl User {
@@ -196,6 +215,50 @@ impl User {
         }
     }
 
+    pub async fn validate_google(user_to_valdiate: ProvidedGoogleUser, db: &MongoDb) -> Result<ProvidedGoogleUser, String> {
+        let user_collection = db.collection("users");
+        let mail = user_to_valdiate.email.clone();
+
+        let user_filter = doc!{"email": mail};
+        match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
+            Some(_) => Err("User is already registered".to_string()),
+            None => {
+                Ok(user_to_valdiate)
+            }
+        }
+    }
+
+    pub async fn insert_google(new_user: ProvidedGoogleUser, db: &MongoDb) -> ObjectId {
+        let user_collection = db.collection("users");
+
+        (*user_collection
+            .insert_one(new_user.to_doc(), InsertOneOptions::default())
+            .await
+            .expect("Error inserting User")
+            .inserted_id
+            .as_object_id()
+            .unwrap())
+            .clone()
+    }
+
+    pub async fn find_google_user(user_to_find: ProvidedGoogleUser, db: &MongoDb) -> Result<User, String> {
+        let user_collection = db.collection("users");
+        let email = user_to_find.email.clone();
+
+        let user_filter = doc!{"email": email, "provider": "google"};
+        match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
+            Some(user_found) => {
+                match bson::from_bson::<User>(bson::Bson::Document(user_found)) {
+                    Ok(user) => {
+                       Ok(user)
+                    },
+                    Err(_e) => Err("Incorrect Struct".to_string()),
+                }
+            },
+            None => Err("User not found".to_string())
+        }
+    }
+
     pub async fn to_doc(&self) -> Document {
         doc! {
             "name": self.name.clone(),
@@ -207,14 +270,16 @@ impl User {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GoogleUser {
-    pub _id: Option<ObjectId>,
-    name: String,
-    pub username: String,
-    pub password: String,
-    pub role: Option<String>,
-    email: String,
-    provider: String,
+impl ProvidedGoogleUser {
+    pub fn to_doc(&self) -> Document {
+        doc! {
+            "name": self.name.clone(),
+            "username": self.email.clone(),
+            "password": "",
+            "role": "user",
+            "email": self.email.clone(),
+            "provider": "google"
+        }
+    }
 }
 
