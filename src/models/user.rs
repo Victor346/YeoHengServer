@@ -4,9 +4,10 @@ use bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 use mongodb::bson::doc;
-use mongodb::options::{FindOneOptions, InsertOneOptions, UpdateOptions};
+use mongodb::options::{FindOneOptions, InsertOneOptions, UpdateOptions, FindOptions};
 use mongodb::bson::Document;
 use argon2::{self};
+use futures::StreamExt;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -16,6 +17,15 @@ pub struct User {
     pub password: String,
     role: Option<String>,
     email: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserProfile {
+    _id: ObjectId,
+    name: String,
+    username: String,
+    role: String,
+    email: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -99,12 +109,12 @@ impl User {
             FindOneOptions::default()
         ).await.expect("Error finding user") {
             Some(admin_found) => {
-                let admin_role = admin_found.get_str("role").expect("Error gettin admin role");
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
 
                 match admin_role {
                     "superadmin" => {
                         match user_collection.update_one(
-                            doc!{"_id": user_oid},
+                            doc!{"_id": user_oid, "role": "user"},
                             doc!{"$set": {"role": "admin"}},
                             UpdateOptions::default()
                         ).await {
@@ -131,17 +141,60 @@ impl User {
             FindOneOptions::default()
         ).await.expect("Error finding user") {
             Some(admin_found) => {
-                let admin_role = admin_found.get_str("role").expect("Error gettin admin role");
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
 
                 match admin_role {
                     "superadmin" => {
                         match user_collection.update_one(
-                            doc!{"_id": user_oid},
+                            doc!{"_id": user_oid, "role": "admin"},
                             doc!{"$set": {"role": "user"}},
                             UpdateOptions::default()
                         ).await {
                             Ok(_) => Ok("Successfully demoted user role".to_string()),
-                            Err(_) => Err("Error promoting user role".to_string())
+                            Err(_) => Err("Error demoting user role".to_string())
+                        }
+                    },
+                    _ => Err("Access Denied: user don't have sufficient privileges".to_string())
+                }
+            },
+            None => Err("User not found".to_string())
+        }
+    }
+
+    pub async fn get_all_like_user(search_str: String, admin_id: String, db: &MongoDb) -> Result<Vec<UserProfile>, String> {
+        let user_collection = db.collection("users");
+        let admin_oid = ObjectId::with_string(admin_id.as_str().as_ref())
+            .expect("Cannot convert given string to ObjectId");
+
+        match user_collection.find_one(
+            doc!{"_id": admin_oid},
+            FindOneOptions::default()
+        ).await.expect("Error finding user") {
+            Some(admin_found) => {
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
+
+                match admin_role {
+                    "superadmin" => {
+                        match user_collection.find(doc!{"username": {"$regex": search_str, "$options": "i"}},
+                                                   FindOptions::default()
+                        ).await {
+                            Ok(mut cursor) => {
+                                let mut users = Vec::<UserProfile>::new();
+
+                                while let Some(result) = cursor.next().await {
+                                    match result {
+                                        Ok(document) =>
+                                            match bson::from_bson::<UserProfile>(bson::Bson::Document(document)) {
+                                                Ok(user) => users.push(user),
+                                                Err(e) => println!("Error retrieving User"),
+                                            },
+                                        Err(e) => println!("{:?}", e),
+                                    };
+                                }
+
+                                Ok(users)
+                            },
+                            Err(e) => Err("Error getting users".to_string())
                         }
                     },
                     _ => Err("Access Denied: user don't have sufficient privileges".to_string())

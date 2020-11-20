@@ -37,6 +37,7 @@ pub async fn get_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilt
 pub async fn count_events(db: web::Data<MongoDb>, event_json: web::Query<EventFilter>
 ) -> HttpResponse {
     let event_filter = event_json.into_inner();
+
     match Event::count_filtered_events(event_filter, &db).await {
         Ok(count) => {
             let mut map: HashMap<&str, i64> = HashMap::new();
@@ -47,16 +48,31 @@ pub async fn count_events(db: web::Data<MongoDb>, event_json: web::Query<EventFi
     }
 }
 
-pub async fn update_event(db: web::Data<MongoDb>, event_json: web::Json<EventUpdate>,
-                          _: check_user::CheckLogin) -> HttpResponse {
-
+pub async fn update_event(db: web::Data<MongoDb>,
+                          event_json: web::Json<EventUpdate>,
+                          _: check_user::CheckLogin
+) -> HttpResponse {
     let event = event_json.into_inner();
+
     match EventUpdate::update(event, &db).await {
         Ok(event) => HttpResponse::Ok().json(event),
         Err(e) => {
             println!("{}", e.clone());
             HttpResponse::BadRequest().body(e)
         }
+    }
+}
+
+pub async fn force_private(db: web::Data<MongoDb>,
+                           event_path: web::Path<String>,
+                           check: check_user::CheckLogin
+) -> HttpResponse {
+    let event_id = event_path.into_inner();
+    let admin_id = check.user_id;
+
+    match Event::force_private(event_id, admin_id, &db).await {
+        Ok(msg) => HttpResponse::Created().body(msg),
+        Err(e) => HttpResponse::BadRequest().body(e),
     }
 }
 

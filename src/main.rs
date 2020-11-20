@@ -55,6 +55,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/presigned", web::get().to(event_controller::get_presigned_url))
                     .route("/create", web::post().to(event_controller::create_event))
                     .route("/update", web::put().to(event_controller::update_event))
+                    .route("/forceprivate/{id}", web::put().to(event_controller::force_private))
                     .route("/{id}", web::get().to(event_controller::get_event))
             )
             .service(
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/add", web::put().to(trip_controller::add_event_entry))
                     .route("/remove", web::put().to(trip_controller::remove_event_entry))
                     .route("/fork", web::post().to(trip_controller::fork_trip))
+                    .route("/forceprivate/{id}", web::put().to(trip_controller::force_private))
                     .route("/{id}", web::get().to(trip_controller::get_trip))
                     .route("/{id}", web::delete().to(trip_controller::delete_trip))
             )
@@ -73,6 +75,10 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/user")
                     .route("/promote/{id}", web::put().to(user_controller::promote))
                     .route("/demote/{id}", web::put().to(user_controller::demote))
+            )
+            .service(
+                web::scope("/users")
+                    .route("/{str}", web::put().to(user_controller::get_all_like_user))
             )
             .default_service(
                 web::route()

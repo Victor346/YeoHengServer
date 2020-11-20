@@ -70,6 +70,19 @@ pub async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>
     }
 }
 
+pub async fn get_all_like_user(db: web::Data<MongoDb>,
+                               search_path: web::Path<String>,
+                               check: check_user::CheckLogin
+) -> HttpResponse {
+    let search_str = search_path.into_inner();
+    let admin_id = check.user_id;
+
+    match User::get_all_like_user(search_str, admin_id, &db).await {
+        Ok(users) => HttpResponse::Ok().json(users),
+        Err(e) => HttpResponse::BadRequest().body(e),
+    }
+}
+
 pub async fn promote(db: web::Data<MongoDb>,
                      user_path: web::Path<String>,
                      check: check_user::CheckLogin

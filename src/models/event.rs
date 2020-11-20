@@ -10,6 +10,7 @@ use mongodb::options::{
     FindOneOptions,
     FindOneAndUpdateOptions,
     CountOptions,
+    UpdateOptions,
     ReturnDocument
 };
 use futures::stream::StreamExt;
@@ -152,6 +153,39 @@ impl Event {
             .as_object_id()
             .unwrap()
         ).clone()
+    }
+
+    pub async fn force_private(event_id: String, admin_id: String, db: &MongoDb) -> Result<String, String> {
+        let event_collection = db.collection("events");
+        let user_collection = db.collection("users");
+        let event_oid = ObjectId::with_string(event_id.as_str().as_ref())
+            .expect("Cannot convert given string to ObjectId");
+        let admin_oid = ObjectId::with_string(admin_id.as_str().as_ref())
+            .expect("Cannot convert given string to ObjectId");
+
+        match user_collection.find_one(
+            doc!{"_id": admin_oid},
+            FindOneOptions::default()
+        ).await.expect("Error finding user") {
+            Some(admin_found) => {
+                let admin_role = admin_found.get_str("role").expect("Error getting admin role");
+
+                match admin_role {
+                    "superadmin" | "admin" => {
+                        match event_collection.update_one(
+                            doc!{"_id": event_oid},
+                            doc!{"$set": {"private": true}},
+                            UpdateOptions::default()
+                        ).await {
+                            Ok(_) => Ok("Successfully changed event to private".to_string()),
+                            Err(_) => Err("Error changing event to private".to_string())
+                        }
+                    },
+                    _ => Err("Access Denied: user don't have sufficient privileges".to_string())
+                }
+            },
+            None => Err("User not found".to_string())
+        }
     }
 
     pub async fn to_doc(&self) -> Document {
