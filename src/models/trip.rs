@@ -18,6 +18,7 @@ use std::borrow::Borrow;
 use std::clone::Clone;
 use futures::stream::StreamExt;
 use std::error::Error;
+use chrono::{DateTime, NaiveDateTime};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EventEntry {
@@ -248,10 +249,21 @@ impl Trip {
                         let new_user_id = ObjectId::with_string(user_id.as_str().as_ref())
                             .expect("Cannot convert given string to ObjectId");
 
+                        let original_start_date = DateTime::parse_from_rfc3339(trip.start_date.as_str())
+                            .unwrap();
+                        let original_end_date = DateTime::parse_from_rfc3339(trip.end_date.as_str())
+                            .unwrap();
+
+                        let new_start_date = DateTime::parse_from_rfc3339(trip_fork.start_date.as_str())
+                            .unwrap();
+
+                        let diff_seconds = new_start_date.timestamp() - original_start_date.timestamp();
+
                         let new_trip = TripCreate {
                             name: trip_fork.name,
                             start_date: trip_fork.start_date,
-                            end_date: trip_fork.end_date,
+                            end_date: NaiveDateTime::from_timestamp(original_end_date.timestamp() + diff_seconds, 0)
+                                .format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
                             budget: trip.budget,
                             destination: trip.destination,
                             private: trip.private,
@@ -270,7 +282,7 @@ impl Trip {
 
                         let new_events = trip.events.into_iter()
                                                                      .map(|event_entry| event_entry
-                                                                         .to_doc_new_id(new_user_id.clone())
+                                                                         .to_doc_new_id_with_time_diff(new_user_id.clone(), diff_seconds)
                                                                      )
                                                                      .collect::<Vec<Document>>();
                         match trip_collection.update_one(doc! {"_id": new_trip_id.clone()},
@@ -344,6 +356,21 @@ impl EventEntry {
             "duration": self.duration.clone(),
         }
     }
+
+    pub fn to_doc_new_id_with_time_diff(&self, id: ObjectId, time_offset: i64) -> Document {
+        let original_start_date = DateTime::parse_from_rfc3339(self.start_date.as_str())
+            .unwrap().timestamp();
+        let new_timestamp = NaiveDateTime::from_timestamp(original_start_date + time_offset, 0)
+            .format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
+        doc! {
+            "_id": id.clone(),
+            "event_id": self.event_id.clone(),
+            "start_date": new_timestamp.clone(),
+            "start_hour": new_timestamp,
+            "budget": self.budget.clone(),
+            "duration": self.duration.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -389,7 +416,6 @@ pub struct TripEdit {
 pub struct TripFork {
     pub name: String,
     pub start_date: String,
-    pub end_date: String,
     #[serde(deserialize_with = "string_to_objectid")]
     pub to_fork_trip_id: ObjectId,
 }
