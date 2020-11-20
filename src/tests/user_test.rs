@@ -98,4 +98,5 @@ mod test {
 
         assert_eq!("User is already registered".to_string(), response);
     }
+
 }
