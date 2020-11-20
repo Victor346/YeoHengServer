@@ -212,7 +212,7 @@ impl Trip {
         };
 
         match trip_collection.update_one(doc! {"_id": event_entry._id.clone()},
-                                         doc! {"$pull": {"events": {"event_id": event_entry.event_id}}},
+                                         update_query,
                                          UpdateOptions::default()
         ).await {
             Ok(_) => Ok("Event successfully removed".to_string()),
