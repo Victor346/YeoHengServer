@@ -12,11 +12,11 @@ use futures::StreamExt;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     pub _id: Option<ObjectId>,
-    name: String,
+    pub name: String,
     pub username: String,
     pub password: String,
     pub role: Option<String>,
-    email: String,
+    pub email: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,10 +35,7 @@ pub struct UserLogin {
 }
 
 impl User {
-    pub async fn validate(user_to_valdiate: User, client: &MongoClient) -> Result<User, String> {
-        let db = client.database(std::env::var("DATABASE_NAME")
-                                    .expect("Error retrieving database name")
-                                        .as_str());
+    pub async fn validate(user_to_valdiate: User, db: &MongoDb) -> Result<User, String> {
         let user_collection = db.collection("users");
         let mail = user_to_valdiate.email.clone();
         let username = user_to_valdiate.username.clone();
@@ -57,11 +54,9 @@ impl User {
         }
     }
 
-    pub async fn insert(user: User, client: &MongoClient) -> ObjectId {
-        let db = client.database(std::env::var("DATABASE_NAME")
-                        .expect("Error retrieving database name")
-                        .as_str());
+    pub async fn insert(user: User, db: &MongoDb) -> ObjectId {
         let user_collection = db.collection("users");
+
         (*user_collection
             .insert_one(user.to_doc().await, InsertOneOptions::default())
             .await
@@ -72,10 +67,7 @@ impl User {
             .clone()
     }
 
-    pub async fn find_user(user_to_find: UserLogin, client: &MongoClient) -> Result<User, String> {
-        let db = client.database(std::env::var("DATABASE_NAME")
-                                    .expect("Error retrieving database name")
-                                        .as_str());
+    pub async fn find_user(user_to_find: UserLogin, db: &MongoDb) -> Result<User, String> {
         let user_collection = db.collection("users");
         let email = user_to_find.email.clone();
         let password = user_to_find.password.clone();
