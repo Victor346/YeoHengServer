@@ -535,6 +535,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
+name = "base64"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +700,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "chunked_transfer"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7477065d45a8fe57167bf3cf8bcd3729b54cfcb81cca49bda2d038ea89ae82ca"
+
+[[package]]
 name = "cloudabi"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -741,6 +753,22 @@ dependencies = [
  "percent-encoding",
  "time 0.2.19",
  "version_check",
+]
+
+[[package]]
+name = "cookie_store"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3818dfca4b0cb5211a659bbcbb94225b7127407b2b135e650d717bfb78ab10d3"
+dependencies = [
+ "cookie",
+ "idna",
+ "log",
+ "publicsuffix",
+ "serde",
+ "serde_json",
+ "time 0.2.19",
+ "url",
 ]
 
 [[package]]
@@ -942,6 +970,15 @@ dependencies = [
  "rustversion",
  "syn 1.0.39",
  "synstructure",
+]
+
+[[package]]
+name = "error-chain"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
+dependencies = [
+ "version_check",
 ]
 
 [[package]]
@@ -1638,7 +1675,7 @@ dependencies = [
  "pbkdf2",
  "percent-encoding",
  "rand",
- "rustls",
+ "rustls 0.17.0",
  "serde",
  "serde_with",
  "sha-1 0.8.2",
@@ -1656,7 +1693,7 @@ dependencies = [
  "uuid 0.8.1",
  "version_check",
  "webpki",
- "webpki-roots",
+ "webpki-roots 0.18.0",
 ]
 
 [[package]]
@@ -2007,6 +2044,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "publicsuffix"
+version = "1.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bbaa49075179162b49acac1c6aa45fb4dafb5f13cf6794276d77bc7fd95757b"
+dependencies = [
+ "error-chain",
+ "idna",
+ "lazy_static",
+ "regex",
+ "url",
+]
+
+[[package]]
+name = "qstring"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d464fae65fff2680baf48019211ce37aaec0c78e9264c84a3e484717f965104e"
+dependencies = [
+ "percent-encoding",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2260,6 +2319,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0d4a31f5d68413404705d6982529b0e11a9aacd4839d1d6222ee3b8cb4015e1"
 dependencies = [
  "base64 0.11.0",
+ "log",
+ "ring",
+ "sct",
+ "webpki",
+]
+
+[[package]]
+name = "rustls"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d1126dcf58e93cee7d098dbda643b5f92ed724f1f6a63007c1116eed6700c81"
+dependencies = [
+ "base64 0.12.3",
  "log",
  "ring",
  "sct",
@@ -2814,7 +2886,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15cb62a0d2770787abc96e99c1cd98fcf17f94959f3af63ca85bdfb203f051b4"
 dependencies = [
  "futures-core",
- "rustls",
+ "rustls 0.17.0",
  "tokio",
  "webpki",
 ]
@@ -2989,6 +3061,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
+name = "ureq"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a599426c7388ab189dfd0eeb84c8d879490abc73e3e62a0b6a40e286f6427ab7"
+dependencies = [
+ "base64 0.13.0",
+ "chunked_transfer",
+ "cookie",
+ "cookie_store",
+ "log",
+ "once_cell",
+ "qstring",
+ "rustls 0.18.1",
+ "url",
+ "webpki",
+ "webpki-roots 0.20.0",
+]
+
+[[package]]
 name = "url"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3159,6 +3250,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "webpki-roots"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f20dea7535251981a9670857150d571846545088359b28e4951d350bdaf179f"
+dependencies = [
+ "webpki",
+]
+
+[[package]]
 name = "wepoll-sys-stjepang"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3264,6 +3364,7 @@ dependencies = [
  "rust-argon2",
  "serde",
  "serde_json",
+ "ureq",
  "uuid 0.8.1",
 ]
 

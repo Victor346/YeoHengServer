@@ -47,7 +47,9 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(user_controller::index))
             .route("/login", web::post().to(user_controller::login))
+            .route("/login/google", web::post().to(user_controller::login_from_google))
             .route("/signup", web::post().to(user_controller::register))
+            .route("/signup/google", web::post().to(user_controller::register_from_google))
             .service(
                 web::scope("/event")
                     .route("", web::get().to(event_controller::get_events))
