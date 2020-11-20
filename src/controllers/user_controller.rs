@@ -1,7 +1,6 @@
 use crate::models::user::{User, UserLogin};
 use crate::auth::check_user;
 use crate::auth::{authentication};
-use crate::MongoClient;
 use crate::MongoDb;
 
 use actix_web::{web, HttpResponse, Responder};
@@ -18,10 +17,10 @@ pub async fn index() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
 }
 
-pub async fn login(client: web::Data<MongoClient>, user_form: web::Form<UserLogin>) -> impl Responder {
+pub async fn login(db: web::Data<MongoDb>, user_form: web::Form<UserLogin>) -> impl Responder {
     let user_login = user_form.into_inner();
 
-    match User::find_user(user_login, &client).await {
+    match User::find_user(user_login, &db).await {
         Ok(validated_user) => {
             let user_id = validated_user._id.clone().unwrap();
             let username = validated_user.username.clone();
@@ -43,16 +42,16 @@ pub async fn login(client: web::Data<MongoClient>, user_form: web::Form<UserLogi
     }
 }
 
-pub async fn register(client: web::Data<MongoClient>, user_json: web::Json<User>) -> impl Responder {
+pub async fn register(db: web::Data<MongoDb>, user_json: web::Json<User>) -> impl Responder {
     let user = user_json.into_inner();
 
-    match User::validate(user, &client).await {
+    match User::validate(user, &db).await {
         Ok(mut validated_user) => {
             println!("{:?}", validated_user);
             let salted_pass = authentication::salt_password(validated_user.password.clone());
             let username = validated_user.username.clone();
             validated_user.password = salted_pass;
-            let user_id = User::insert(validated_user, &client).await;
+            let user_id = User::insert(validated_user, &db).await;
             let id = user_id.clone().to_hex();
             let jwt = authentication::generate_jwt(user_id);
             let response = UserResponse{
