@@ -80,7 +80,7 @@ impl User {
         let email = user_to_find.email.clone();
         let password = user_to_find.password.clone();
 
-        let user_filter = doc!{"email": email};
+        let user_filter = doc!{"email": email, "provider": {"$ne": "google"}};
         match user_collection.find_one(user_filter, FindOneOptions::default()).await.expect("Error in find user") {
             Some(user_found) => {
                 match bson::from_bson::<User>(bson::Bson::Document(user_found)) {
@@ -214,3 +214,15 @@ impl User {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GoogleUser {
+    pub _id: Option<ObjectId>,
+    name: String,
+    pub username: String,
+    pub password: String,
+    pub role: Option<String>,
+    email: String,
+    provider: String,
+}
+
